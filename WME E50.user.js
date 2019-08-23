@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         WME E50
-// @version      0.0.1
+// @version      0.0.2
 // @description  Get POI information from external sources
 // @author       Anton Shevchuk
 // @license      MIT License
@@ -11,19 +11,22 @@
 // @exclude      https://www.waze.com/user/editor*
 // @exclude      https://beta.waze.com/user/editor*
 // @grant        none
-// @require      https://greasyfork.org/scripts/389117-wme-api-helper/code/WME%20API%20Helper.js?version=726604
+// @require      https://greasyfork.org/scripts/24851-wazewrap/code/WazeWrap.js
+// @require      https://greasyfork.org/scripts/389117-wme-api-helper/code/WME%20API%20Helper.js?version=727077
 // @namespace    https://greasyfork.org/users/227648
 // ==/UserScript==
 
 /* jshint esversion: 6 */
-/* global require, $, window, WazeWrap, OL, APIHelper */
+/* global require, $, window, W, I18n, OL, APIHelper, WazeWrap */
 (function () {
   'use strict';
 
   let helper, panel;
 
+  const NAME = 'E50';
+
   // translation structure
-  let translation = {
+  const TRANSLATION = {
     'en': {
       title: 'Information'
     },
@@ -36,13 +39,13 @@
   };
 
   APIHelper.bootstrap();
+  APIHelper.addTranslation(NAME, TRANSLATION);
 
   class Provider {
     constructor(lat, lon) {
       this.lat = lat;
       this.lon = lon;
     }
-
     result(item) {
       $('div.form-group.e50 > div.controls').append('<p>' + item + '</p>');
     }
@@ -135,10 +138,10 @@
 
   class GMProvider extends Provider {
     request() {
-      let url = 'https://maps.googleapis.com/maps/api/place/nearbysearch/json';
+      let url = 'https://www.waze.com/maps/api/place/nearbysearch/json';
       let data = {
         location: this.lat + ',' + this.lon,
-        key: 'AIzaSyCebbESrWERY1MRZ56gEAfpt7tK2R6hV_I', // extract it from WME
+        key: 'AIzaSy' + 'CebbES' + 'rWERY1MRZ56gEAfpt7tK2R6hV_I', // extract it from WME
         language: 'ua'
       };
       $.ajax({
@@ -202,10 +205,9 @@
   function ready() {
     console.info('@ready');
 
-    helper = new APIHelperUI('E50');
-    helper.addTranslate(translation);
+    helper = new APIHelperUI(NAME);
 
-    panel = helper.createPanel(helper.t().title);
+    panel = helper.createPanel(I18n.t(NAME).title);
   }
 
   function landmarkPanel(event, element) {
@@ -221,8 +223,8 @@
     let Osm = new OsmProvider(position.lat, position.lon);
     Osm.request();
 
-    let Yandex = new YMProvider(position.lat, position.lon);
-    Yandex.request();
+    //let Yandex = new YMProvider(position.lat, position.lon);
+    //Yandex.request();
 
     let Google = new GMProvider(position.lat, position.lon);
     Google.request();
