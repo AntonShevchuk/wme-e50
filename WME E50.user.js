@@ -42,115 +42,192 @@
       this.lat = lat;
       this.lon = lon;
     }
+
     result(item) {
-        $('div.form-group.e50 > div.controls').append('<p>' + item + '</p>');
+      $('div.form-group.e50 > div.controls').append('<p>' + item + '</p>');
     }
   }
+
   class GisProvider extends Provider {
     request() {
-        let url = 'https://catalog.api.2gis.ru/2.0/geo/search';
-        let data = {
-            point: this.lon + ',' + this.lat,
-            format: 'json',
-            fields: 'items.links',
-            key: 'rubnkm7490',
-            locale: 'uk_UA'
-        };
-        let self = this;
+      let url = 'https://catalog.api.2gis.ru/2.0/geo/search';
+      let data = {
+        point: this.lon + ',' + this.lat,
+        format: 'json',
+        fields: 'items.links',
+        key: 'rubnkm7490',
+        locale: 'uk_UA'
+      };
+      let self = this;
 
-        $.ajax({
-            dataType: 'json',
-            cache: false,
-            url: url,
-            data: data,
-            error: function () {
-            },
-            success: function (response) {
-                if (!response.result) {
-                    return;
-                }
-                // 0 - building
-                // 1 - district
-                // 2 - city
-                console.log(response.result);
+      $.ajax({
+        dataType: 'json',
+        cache: false,
+        url: url,
+        data: data,
+        error: function () {
+        },
+        success: function (response) {
+          if (!response.result) {
+            return;
+          }
+          // 0 - building
+          // 1 - district
+          // 2 - city
+          console.log(response.result);
 
-                let res = response.result.items[0];
-
-                let output = '';
-                if (res.purpose_name) {
-                    output += res.purpose_name + ', ';
-                }
-                if (res.name) {
-                    output += res.name;
-                } else {
-                    output += res.address_name;
-                }
-                self.result('2GIS: ' + output);
-            }
-        });
+          let res = response.result.items[0];
+          let output = [];
+          if (res.name) {
+            output.push(res.name);
+          } else {
+            output.push(res.address_name);
+          }
+          if (res.purpose_name) {
+            output.push(res.purpose_name);
+          }
+          self.result('2GIS: ' + output.join(', '));
+        }
+      });
     }
   }
+
   class OsmProvider extends Provider {
-      request() {
-          let url = 'https://nominatim.openstreetmap.org/reverse';
-          let data = {
-              lon: this.lon,
-              lat: this.lat,
-              zoom: 20,
-              format: 'json',
-              addressdetails: 1,
-              countrycodes: 'ua',
-              'accept-language':  'uk_UA'
-          };
-          let self = this;
+    request() {
+      let url = 'https://nominatim.openstreetmap.org/reverse';
+      let data = {
+        lon: this.lon,
+        lat: this.lat,
+        zoom: 20,
+        format: 'json',
+        addressdetails: 1,
+        countrycodes: 'ua',
+        'accept-language': 'uk_UA'
+      };
+      let self = this;
 
-          $.ajax({
-              dataType: 'json',
-              cache: false,
-              url: url,
-              data: data,
-              error: function () {
-              },
-              success: function (response) {
-                  if (!response.address) {
-                      return;
-                  }
-                  console.log(response);
+      $.ajax({
+        dataType: 'json',
+        cache: false,
+        url: url,
+        data: data,
+        error: function () {
+        },
+        success: function (response) {
+          if (!response.address) {
+            return;
+          }
+          console.log(response);
 
-                  self.result('OSM: ' + response.display_name);
-              }
-          });
-      }
+          let output = [];
+          if (response.address.road) {
+            output.push(response.address.road);
+          }
+          if (response.address.house_number) {
+            output.push(response.address.house_number);
+          }
+
+          self.result('OSM: ' + output.join(', '));
+        }
+      });
+    }
+  }
+
+  class GMProvider extends Provider {
+    request() {
+      let url = 'https://maps.googleapis.com/maps/api/place/nearbysearch/json';
+      let data = {
+        location: this.lat + ',' + this.lon,
+        key: 'AIzaSyCebbESrWERY1MRZ56gEAfpt7tK2R6hV_I', // extract it from WME
+        language: 'ua'
+      };
+      $.ajax({
+        dataType: 'json',
+        cache: false,
+        url: url,
+        data: data,
+        error: function() {
+        },
+        success: function(response) {
+          if (!response.results || !response.results.length) {
+            return;
+          }
+          console.log(response);
+        }
+      });
+    }
+  }
+
+  class YMProvider extends Provider {
+    request() {
+      let url = 'https://geocode-maps.yandex.ru/1.x/';
+      let data = {
+        geocode: this.lon + ',' + this.lat,
+        apikey: '2fe62c0e-580f-4541-b325-7c896d8d9481',
+        kind: 'house',
+        results: 1,
+        format: 'json',
+        lang: 'uk_UA'
+      };
+      let self = this;
+
+      $.ajax({
+        dataType: 'json',
+        cache: false,
+        url: url,
+        data: data,
+        error: function () {
+        },
+        success: function (response) {
+          if (!response.response) {
+            return;
+          }
+          if (!response.response.GeoObjectCollection.featureMember.length) {
+            return;
+          }
+          console.log(response.response);
+
+          let output = [];
+          self.result('Ya: ' + response.response.GeoObjectCollection.featureMember[0].GeoObject.name);
+        }
+      });
+    }
   }
 
   $(document)
-      .on('ready.apihelper', ready)
-      .on('landmark.apihelper', '#edit-panel', landmarkPanel);
+    .on('ready.apihelper', ready)
+    .on('landmark.apihelper', '#edit-panel', landmarkPanel);
 
 
-    function ready() {
-        console.info('@ready');
+  function ready() {
+    console.info('@ready');
 
-        helper = new APIHelperUI('E50');
-        helper.addTranslate(translation);
+    helper = new APIHelperUI('E50');
+    helper.addTranslate(translation);
 
-        panel = helper.createPanel(helper.t().title);
-    }
+    panel = helper.createPanel(helper.t().title);
+  }
 
-    function landmarkPanel(event, element) {
-        console.info('@landmark');
+  function landmarkPanel(event, element) {
+    console.info('@landmark');
 
-        let selected = APIHelper.getSelectedVenues()[0].geometry.getCentroid().clone();
-            selected.transform('EPSG:3857', 'EPSG:4326');
-        let position = new OpenLayers.LonLat(selected.x, selected.y);
+    let selected = APIHelper.getSelectedVenues()[0].geometry.getCentroid().clone();
+    selected.transform('EPSG:3857', 'EPSG:4326');
+    let position = new OpenLayers.LonLat(selected.x, selected.y);
 
-        let Gis = new GisProvider(position.lat, position.lon);
-            Gis.request();
+    let Gis = new GisProvider(position.lat, position.lon);
+    Gis.request();
 
-        let Osm = new OsmProvider(position.lat, position.lon);
-            Osm.request();
+    let Osm = new OsmProvider(position.lat, position.lon);
+    Osm.request();
 
-        let group = panel.toHTML();
-        element.prepend(group);
-    }
+    let Yandex = new YMProvider(position.lat, position.lon);
+    Yandex.request();
+
+    let Google = new GMProvider(position.lat, position.lon);
+    Google.request();
+
+    let group = panel.toHTML();
+    element.prepend(group);
+  }
 })();
