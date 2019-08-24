@@ -22,6 +22,7 @@
   'use strict';
 
   let helper, panel;
+  let vectorLayer, vectorPoint, vectorLine;
 
   const NAME = 'E50';
 
@@ -46,8 +47,20 @@
       this.lat = lat;
       this.lon = lon;
     }
-    result(item) {
-      $('div.form-group.e50 > div.controls').append('<p>' + item + '</p>');
+    link(lat, lon, street, number, name = null) {
+      let a = document.createElement('a');
+          a.href = '#';
+          a.dataset.lat = lat;
+          a.dataset.lon = lon;
+          a.dataset.street = street;
+          a.dataset.number = number;
+          a.dataset.name = name;
+          a.innerHTML = [street, number, name].filter(x => !!x).join(', ');
+          a.className = NAME + '-link';
+      return a;
+    }
+    result(prefix, item, postfix = '<br/>') {
+      $('div.form-group.e50 > div.controls').append(prefix).append(item).append(postfix);
     }
   }
 
@@ -89,7 +102,7 @@
           if (res.purpose_name) {
             output.push(res.purpose_name);
           }
-          self.result('2GIS: ' + output.join(', '));
+          self.result('2GIS: ', output.join(', '));
         }
       });
     }
@@ -101,7 +114,7 @@
       let data = {
         lon: this.lon,
         lat: this.lat,
-        zoom: 20,
+        zoom: 18,
         format: 'json',
         addressdetails: 1,
         countrycodes: 'ua',
@@ -123,14 +136,19 @@
           console.log(response);
 
           let output = [];
+          let street = null;
+          let number = null;
           if (response.address.road) {
+            street = response.address.road;
             output.push(response.address.road);
           }
           if (response.address.house_number) {
+            number = response.address.house_number;
             output.push(response.address.house_number);
           }
 
-          self.result('OSM: ' + output.join(', '));
+          let link = self.link(response.lat, response.lon, street, number, output.join(', '));
+          self.result('OSM: ', link);
         }
       });
     }
@@ -142,8 +160,12 @@
       let data = {
         location: this.lat + ',' + this.lon,
         key: 'AIzaSy' + 'CebbES' + 'rWERY1MRZ56gEAfpt7tK2R6hV_I', // extract it from WME
+        radius: 80,
+        fields: 'geometry,formatted_address',
         language: 'ua'
       };
+      let self = this;
+
       $.ajax({
         dataType: 'json',
         cache: false,
@@ -155,7 +177,20 @@
           if (!response.results || !response.results.length) {
             return;
           }
-          console.log(response);
+          console.log(response.results);
+          for (let i = 0; i < response.results.length; i++) {
+            let res = response.results[i];
+            if (res.types.indexOf('point_of_interest') !== -1) {
+              let link = self.link(
+                  res.geometry.location.lat,
+                  res.geometry.location.lng,
+                  null,
+                  null,
+                  res.name + ' ' + res.vicinity
+              );
+              self.result('G: ', link);
+            }
+          }
         }
       });
     }
@@ -190,8 +225,7 @@
           }
           console.log(response.response);
 
-          let output = [];
-          self.result('Ya: ' + response.response.GeoObjectCollection.featureMember[0].GeoObject.name);
+          self.result('Ya: ', response.response.GeoObjectCollection.featureMember[0].GeoObject.name);
         }
       });
     }
@@ -199,7 +233,11 @@
 
   $(document)
     .on('ready.apihelper', ready)
-    .on('landmark.apihelper', '#edit-panel', landmarkPanel);
+    .on('landmark.apihelper', '#edit-panel', landmarkPanel)
+    .on('click', '.' + NAME + '-link', applyData)
+    .on('mouseenter', '.' + NAME + '-link', showVector)
+    .on('mouseleave', '.' + NAME + '-link', hideVector)
+  ;
 
 
   function ready() {
@@ -208,6 +246,9 @@
     helper = new APIHelperUI(NAME);
 
     panel = helper.createPanel(I18n.t(NAME).title);
+
+    vectorLayer = new OL.Layer.Vector("E50VectorLayer", {displayInLayerSwitcher: false, uniqueName: "__E50VectorLayer"});
+    W.map.addLayer(vectorLayer);
   }
 
   function landmarkPanel(event, element) {
@@ -231,5 +272,34 @@
 
     let group = panel.toHTML();
     element.prepend(group);
+  }
+
+  function applyData() {
+    console.log(this.dataset);
+    return false;
+  }
+  function showVector() {
+    let from = APIHelper.getSelectedVenues()[0].geometry.getCentroid();
+    let to = new OL.Geometry.Point(this.dataset.lon, this.dataset.lat).transform('EPSG:4326', 'EPSG:900913');
+
+    vectorLine = new OL.Feature.Vector(new OL.Geometry.LineString([from, to]), {}, {
+      strokeWidth: 4,
+      strokeColor: '#00ece3',
+      strokeLinecap: 'round'
+    });
+    vectorPoint = new OL.Feature.Vector(to, {}, {
+      pointRadius: 8,
+      fillOpacity: 0,
+      strokeColor: '#00ece3',
+      strokeWidth: '2',
+      strokeLinecap: 'round'
+    });
+    vectorLayer.addFeatures([vectorLine, vectorPoint]);
+
+    console.log(WazeWrap.Geometry.calculateDistance([to, from]));
+  }
+
+  function hideVector() {
+    vectorLayer.removeAllFeatures();
   }
 })();
