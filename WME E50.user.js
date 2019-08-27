@@ -17,7 +17,7 @@
 // ==/UserScript==
 
 /* jshint esversion: 6 */
-/* global require, $, window, W, I18n, OL, APIHelper, WazeWrap */
+/* global require, $, window, W, I18n, OL, APIHelper, APIHelperUI, WazeWrap */
 (function () {
   'use strict';
 
@@ -303,8 +303,6 @@
   /**
    * Here Maps
    * @link https://developer.here.com/documentation/geocoder/topics/quick-start-geocode.html
-   * https://geocoder.api.here.com/6.2/geocode.json?app_id=GCFmOOrSp8882vFwTxEm&app_code=O-LgGkoRfypnRuik0WjX9A&searchtext=425+W+Randolph+Chicago
-   * https://reverse.geocoder.api.here.com/6.2/reversegeocode.json?app_id=GCFmOOrSp8882vFwTxEm&app_code=O-LgGkoRfypnRuik0WjX9A&prox=49.929648517086314,36.433346448823414,10&mode=retrieveAddresses&locationattributes=none,ar&addressattributes=str,hnr
    */
   class HereProvider extends Provider {
     request(params) {
@@ -349,6 +347,49 @@
         res.Location.DisplayPosition.Latitude,
         res.Location.Address.Street,
         res.Location.Address.HouseNumber
+      );
+    }
+  }
+
+  /**
+   * Bing Maps
+   * @link https://docs.microsoft.com/en-us/bingmaps/rest-services/locations/find-a-location-by-point
+   * http://dev.virtualearth.net/REST/v1/Locations/50.03539,36.34732?o=xml&key=AuBfUY8Y1Nzf3sRgceOYxaIg7obOSaqvs0k5dhXWfZyFpT9ArotYNRK7DQ_qZqZw&c=uk
+   * http://dev.virtualearth.net/REST/v1/Locations/50.03539,36.34732?o=xml&key=AuBfUY8Y1Nzf3sRgceOYxaIg7obOSaqvs0k5dhXWfZyFpT9ArotYNRK7DQ_qZqZw&c=uk&includeEntityTypes=Address
+   */
+  class BingProvider extends Provider {
+    request(params) {
+      let url = 'https://dev.virtualearth.net/REST/v1/Locations/' + params.lat + ',' + params.lon;
+      let data = {
+        includeEntityTypes: 'Address',
+        c: 'uk',
+        key: 'AuBfUY8Y1Nzf' + '3sRgceOYxaIg7obOSaqvs' + '0k5dhXWfZyFpT9ArotYNRK7DQ_qZqZw',
+      };
+      let self = this;
+
+      $.ajax({
+        dataType: 'json',
+        cache: false,
+        url: url,
+        data: data,
+        error: function () {
+        },
+        success: function (response) {
+          if (!response || !response.resourceSets || !response.resourceSets[0]) {
+            return;
+          }
+          console.log(response.resourceSets[0].resources);
+          self.collection(response.resourceSets[0].resources.filter(el => el.address.addressLine.indexOf(',') > 0));
+        }
+      });
+    }
+    item(res) {
+      let address = res.address.addressLine.split(',');
+      return this.link(
+        res.point.coordinates[1],
+        res.point.coordinates[0],
+        address[0],
+        address[1]
       );
     }
   }
@@ -452,6 +493,10 @@
     let Here = new HereProvider('Here');
     Here.panel(group);
     Here.search(selected.x, selected.y);
+
+    let Bing = new BingProvider('Bing');
+    Bing.panel(group);
+    Bing.search(selected.x, selected.y);
 
     let Google = new GPProvider('Google');
     Google.panel(group);
