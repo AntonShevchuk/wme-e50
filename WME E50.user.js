@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         WME E50
-// @version      0.0.4
+// @version      0.0.5
 // @description  Get POI information from external sources
 // @author       Anton Shevchuk
 // @license      MIT License
@@ -29,18 +29,26 @@
   // translation structure
   const TRANSLATION = {
     'en': {
-      title: 'Information'
+      title: 'Information',
+      questions: {
+        changeName: 'Are you sure to change the name?'
+      }
     },
     'uk': {
-      title: 'Інформація'
+      title: 'Інформація',
+      questions: {
+        changeName: 'Ви впевненні що хочете змінити им\'я?'
+      }
     },
     'ru': {
-      title: 'Информация'
+      title: 'Информация',
+      questions: {
+        changeName: 'Ви уверены, что хотите изменить имя?'
+      }
     }
   };
 
   // OpenLayer styles
-
   APIHelper.bootstrap();
   APIHelper.addTranslation(NAME, TRANSLATION);
   APIHelper.appendStyle(
@@ -49,8 +57,12 @@
     '.e50 ul { padding: 0; margin: 0 }' +
     '.e50 li { padding: 0; margin: 0; list-style: none; margin-bottom: 2px }' +
     '.e50 li a { display: block; padding: 2px 4px; text-decoration: none; border: 1px solid #e4e4e4; }' +
-    '.e50 li a:hover { background: #ddd }'
+    '.e50 li a:hover { background: #ddd }' +
+    '.e50 li a.noaddress { background: rgba(255, 255, 200, 0.5) }' +
+    '.e50 li a.noaddress:hover { background: rgba(255, 255, 200, 1) }'
   );
+
+  let WazeActionUpdateObject = require('Waze/Action/UpdateObject');
 
   class Provider {
     constructor(uid) {
@@ -121,7 +133,7 @@
           a.dataset.lon = lon;
           a.dataset.street = street;
           a.dataset.number = number;
-          a.dataset.name = name;
+          a.dataset.name = name ? name : '';
           a.innerHTML = [street, number, name].filter(x => !!x).join(', ');
           a.className = NAME + '-link';
       return a;
@@ -157,7 +169,6 @@
             return;
           }
           console.log(response);
-
           self.collection([response]);
         }
       });
@@ -438,13 +449,16 @@
     }
 
     item(res) {
-      return this.link(
+      let link = this.link(
         res.geometry.location.lng,
         res.geometry.location.lat,
         null,
         null,
-        res.name + ', ' + res.vicinity
+        res.name
       );
+      link.className += ' noaddress';
+      link.innerHTML += ', ' + res.vicinity;
+      return link;
     }
   }
 
@@ -506,7 +520,38 @@
   }
 
   function applyData() {
-    console.log(this.dataset);
+    let poi = APIHelper.getSelectedVenues()[0];
+    let name = this.dataset['name'];
+    let street = this.dataset['street'];
+    let number = this.dataset['number'];
+
+    let newName;
+    console.log(poi);
+    console.log(name + ': ' + street + ', ' + number);
+
+    // POI Name
+    // If exists ask user to replace or not
+    // If not exists - use name or house number as name
+    if (poi.getAttributes().name) {
+      if (name && name !== poi.getAttributes().name) {
+        if (confirm(I18n.t(NAME).questions.changeName + '\n«' + poi.getAttributes().name + '» ⟶ «' + name + '»?')) {
+          newName = name;
+        }
+      } else if (number && number !== poi.getAttributes().name) {
+        if (confirm(I18n.t(NAME).questions.changeName + '\n«' + poi.getAttributes().name + '» ⟶ «' + number + '»?')) {
+          newName = number;
+        }
+      }
+    } else {
+      if (name) {
+        newName = name;
+      } else if (number) {
+        newName = number;
+      }
+    }
+    if (newName) {
+      W.model.actionManager.add(new WazeActionUpdateObject(poi, {name: newName}));
+    }
     return false;
   }
 
