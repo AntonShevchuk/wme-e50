@@ -1,7 +1,7 @@
 // ==UserScript==
-// @name         WME E50
-// @version      0.0.5
-// @description  Get POI information from external sources
+// @name         WME E50 Fetch POI Data
+// @version      0.0.6
+// @description  Fetch information about the POI from external sources
 // @author       Anton Shevchuk
 // @license      MIT License
 // @include      https://www.waze.com/editor*
@@ -12,7 +12,8 @@
 // @exclude      https://beta.waze.com/user/editor*
 // @grant        none
 // @require      https://greasyfork.org/scripts/24851-wazewrap/code/WazeWrap.js
-// @require      https://greasyfork.org/scripts/389117-wme-api-helper/code/WME%20API%20Helper.js?version=727077
+// @require      https://greasyfork.org/scripts/389117-apihelper/code/APIHelper.js?version=729417
+// @require      https://greasyfork.org/scripts/389577-apihelperui/code/APIHelperUI.js?version=729353
 // @namespace    https://greasyfork.org/users/227648
 // ==/UserScript==
 
@@ -51,7 +52,7 @@
   // OpenLayer styles
   APIHelper.bootstrap();
   APIHelper.addTranslation(NAME, TRANSLATION);
-  APIHelper.appendStyle(
+  APIHelper.addStyle(
     '.e50 legend { cursor:pointer; font-size: 12px; font-weight: bold; width: auto; text-align: right; border: 0; margin: 0; padding: 0 8px; }' +
     '.e50 fieldset { border: 1px solid #ddd; padding: 4px; }' +
     '.e50 ul { padding: 0; margin: 0 }' +
@@ -63,6 +64,7 @@
   );
 
   let WazeActionUpdateObject = require('Waze/Action/UpdateObject');
+  let WazeActionUpdateFeatureAddress = require('Waze/Action/UpdateFeatureAddress');
 
   class Provider {
     constructor(uid) {
@@ -464,7 +466,7 @@
 
   $(document)
     .on('ready.apihelper', ready)
-    .on('landmark.apihelper', '#edit-panel', landmarkPanel)
+    .on('landmark.apihelper', landmarkPanel)
     .on('click', '.' + NAME + '-link', applyData)
     .on('mouseenter', '.' + NAME + '-link', showVector)
     .on('mouseleave', '.' + NAME + '-link', hideVector)
@@ -552,6 +554,27 @@
     if (newName) {
       W.model.actionManager.add(new WazeActionUpdateObject(poi, {name: newName}));
     }
+    // POI Address HouseNumber
+    let addressHN = poi.getAddress().attributes.houseNumber;
+    if (number) {
+
+      console.log(poi);
+      // W.model.actionManager.add(new WazeActionUpdateObject(poi, {houseNumber: number}));
+      let address = {
+        countryID: W.model.getTopCountry().getID(),
+        stateID: W.model.getTopState().getID(),
+        houseNumber: number,
+      };
+      // W.model.actionManager.add(new WazeActionUpdateFeatureAddress(poi, address, {updateHouseNumber:true, streetIDField: 'primaryStreetID'}));
+      // W.model.actionManager.add(new WazeActionUpdateObject(poi, {}));
+      if (addressHN) {
+
+      } else {
+
+      }
+    }
+
+
     return false;
   }
 
