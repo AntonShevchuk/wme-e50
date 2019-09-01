@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         WME E50 Fetch POI Data
-// @version      0.0.6
+// @version      0.0.7
 // @description  Fetch information about the POI from external sources
 // @author       Anton Shevchuk
 // @license      MIT License
@@ -17,7 +17,7 @@
 // @namespace    https://greasyfork.org/users/227648
 // ==/UserScript==
 
-/* jshint esversion: 6 */
+/* jshint esversion: 8 */
 /* global require, $, window, W, I18n, OL, APIHelper, APIHelperUI, WazeWrap */
 (function () {
   'use strict';
@@ -32,19 +32,22 @@
     'en': {
       title: 'Information',
       questions: {
-        changeName: 'Are you sure to change the name?'
+        changeName: 'Are you sure to change the name?',
+        changeNumber: 'Are you sure to change the house number?',
       }
     },
     'uk': {
       title: 'Інформація',
       questions: {
-        changeName: 'Ви впевненні що хочете змінити им\'я?'
+        changeName: 'Ви впевненні що хочете змінити им\'я?',
+        changeNumber: 'Ви впевненні що хочете змінити номер дома?',
       }
     },
     'ru': {
       title: 'Информация',
       questions: {
-        changeName: 'Ви уверены, что хотите изменить имя?'
+        changeName: 'Ви уверены, что хотите изменить имя?',
+        changeNumber: 'Ви уверены, что хотите изменить номер дома?',
       }
     }
   };
@@ -63,25 +66,51 @@
     '.e50 li a.noaddress:hover { background: rgba(255, 255, 200, 1) }'
   );
 
+  let WazeActionMultiAction = require('Waze/Action/MultiAction');
   let WazeActionUpdateObject = require('Waze/Action/UpdateObject');
   let WazeActionUpdateFeatureAddress = require('Waze/Action/UpdateFeatureAddress');
+
+  class Cache {
+    constructor() {
+      this.cache = {};
+    }
+    set(key, value) {
+      this.cache[key] = value;
+    }
+    get(key) {
+      if (this.has(key)) {
+        return this.cache[key];
+      } else {
+        return null;
+      }
+    }
+    has(key) {
+      return (typeof this.cache[key] !== 'undefined');
+    }
+  }
+
+  let E50Cache = new Cache();
 
   class Provider {
     constructor(uid) {
       this.uid = uid;
     }
 
-    request() {
+    async request(lon, lat) {
       throw new Error('Abstract method');
     }
 
-    search(lon, lat) {
+    async search(lon, lat) {
       try {
-        let params = {
-          lon: lon,
-          lat: lat,
-        };
-        this.request(params);
+        let result;
+        let key = this.uid + ':' + lon + ',' + lat;
+        if (E50Cache.has(key)) {
+          result = E50Cache.get(key);
+        } else {
+          result = await this.request(lon, lat);
+          E50Cache.set(key, result);
+        }
+        this.collection(result);
       } catch (e) {
         console.error(e);
       }
@@ -133,9 +162,9 @@
           a.href = '#';
           a.dataset.lat = lat;
           a.dataset.lon = lon;
-          a.dataset.street = street;
-          a.dataset.number = number;
-          a.dataset.name = name ? name : '';
+          a.dataset.street = street ? street.trim() : '';
+          a.dataset.number = number ? number.trim() : '';
+          a.dataset.name = name ? name.trim() : '';
           a.innerHTML = [street, number, name].filter(x => !!x).join(', ');
           a.className = NAME + '-link';
       return a;
@@ -146,34 +175,28 @@
    * Open Street Map
    */
   class OsmProvider extends Provider {
-    request(params) {
+    async request(lon, lat) {
       let url = 'https://nominatim.openstreetmap.org/reverse';
       let data = {
-        lon: params.lon,
-        lat: params.lat,
+        lon: lon,
+        lat: lat,
         zoom: 18,
         addressdetails: 1,
         countrycodes: 'ua',
         'accept-language': 'uk_UA',
         format: 'json',
       };
-      let self = this;
-
-      $.ajax({
+      let response = await $.ajax({
         dataType: 'json',
         cache: false,
         url: url,
-        data: data,
-        error: function () {
-        },
-        success: function (response) {
-          if (!response.address) {
-            return;
-          }
-          console.log(response);
-          self.collection([response]);
-        }
+        data: data
       });
+      if (!response.address) {
+        return [];
+      } else {
+        return [response];
+      }
     }
     item(res) {
       let output = [];
@@ -196,10 +219,10 @@
    * @link http://catalog.api.2gis.ru/doc/2.0/geo/#/default/get_2_0_geo_search
    */
   class GisProvider extends Provider {
-    request(params) {
+    async request(lon, lat) {
       let url = 'https://catalog.api.2gis.ru/2.0/geo/search';
       let data = {
-        point: params.lon + ',' + params.lat,
+        point: lon + ',' + lat,
         radius: 20,
         type: 'building',
         fields: 'items.address,items.geometry.centroid',
@@ -207,23 +230,16 @@
         format: 'json',
         key: 'rubnkm' + '7490',
       };
-      let self = this;
-
-      $.ajax({
+      let response = await $.ajax({
         dataType: 'json',
         cache: false,
         url: url,
-        data: data,
-        error: function () {
-        },
-        success: function (response) {
-          if (!response.result || !response.result.items.length) {
-            return;
-          }
-          console.log(response.result);
-          self.collection(response.result.items);
-        }
+        data: data
       });
+      if (!response.result || !response.result.items.length) {
+        return [];
+      }
+      return response.result.items;
     }
 
     item(res) {
@@ -255,34 +271,26 @@
    * Yandex Maps
    */
   class YMProvider extends Provider {
-    request(params) {
+    async request(lon, lat) {
       let url = 'https://geocode-maps.yandex.ru/1.x/';
       let data = {
-        geocode: params.lon + ',' + params.lat,
+        geocode: lon + ',' + lat,
         kind: 'house',
         results: 2,
         lang: 'uk_UA',
         format: 'json',
         apikey: '2fe62c0e' + '-580f-4541-b325-' + '7c896d8d9481',
       };
-      let self = this;
-
-      $.ajax({
+      let response = await $.ajax({
         dataType: 'json',
         cache: false,
         url: url,
         data: data,
-        error: function () {
-          console.error('Yandex Maps Request Error');
-        },
-        success: function (response) {
-          if (!response.response || !response.response.GeoObjectCollection.featureMember.length) {
-            return;
-          }
-          console.log(response.response);
-          self.collection(response.response.GeoObjectCollection.featureMember);
-        }
       });
+      if (!response.response || !response.response.GeoObjectCollection.featureMember.length) {
+        return [];
+      }
+      return response.response.GeoObjectCollection.featureMember;
     }
 
     item(res) {
@@ -318,40 +326,27 @@
    * @link https://developer.here.com/documentation/geocoder/topics/quick-start-geocode.html
    */
   class HereProvider extends Provider {
-    request(params) {
+    async request(lon, lat) {
       let url = 'https://reverse.geocoder.api.here.com/6.2/reversegeocode.json';
       let data = {
         app_id: 'GCFmOOrSp8882vFwTxEm',
         app_code: 'O-LgGkoRfypnRuik0WjX9A',
-        prox: params.lat + ',' + params.lon + ',10',
+        prox: lat + ',' + lon + ',10',
         mode: 'retrieveAddresses',
         locationattributes: 'none,ar',
         addressattributes: 'str,hnr'
       };
-
-      let self = this;
-
-      $.ajax({
+      let response = await $.ajax({
         dataType: 'json',
         cache: false,
         url: url,
         data: data,
-        error: function () {
-        },
-        success: function (response) {
-          if (!response.Response || !response.Response.View || !response.Response.View
-            || !response.Response.View[0] || !response.Response.View[0].Result) {
-            return;
-          }
-          let results = response.Response.View[0].Result;
-          results = results.filter(x => x.MatchLevel === 'houseNumber');
-          if (!results.length) {
-            return;
-          }
-          console.log(results);
-          self.collection(results);
-        }
       });
+      if (!response.Response || !response.Response.View || !response.Response.View || !response.Response.View[0] || !response.Response.View[0].Result) {
+        return [];
+      }
+      let results = response.Response.View[0].Result;
+      return results.filter(x => x.MatchLevel === 'houseNumber');
     }
 
     item(res) {
@@ -371,30 +366,23 @@
    * http://dev.virtualearth.net/REST/v1/Locations/50.03539,36.34732?o=xml&key=AuBfUY8Y1Nzf3sRgceOYxaIg7obOSaqvs0k5dhXWfZyFpT9ArotYNRK7DQ_qZqZw&c=uk&includeEntityTypes=Address
    */
   class BingProvider extends Provider {
-    request(params) {
-      let url = 'https://dev.virtualearth.net/REST/v1/Locations/' + params.lat + ',' + params.lon;
+    async request(lon, lat) {
+      let url = 'https://dev.virtualearth.net/REST/v1/Locations/' + lat + ',' + lon;
       let data = {
         includeEntityTypes: 'Address',
         c: 'uk',
         key: 'AuBfUY8Y1Nzf' + '3sRgceOYxaIg7obOSaqvs' + '0k5dhXWfZyFpT9ArotYNRK7DQ_qZqZw',
       };
-      let self = this;
-
-      $.ajax({
+      let response = await $.ajax({
         dataType: 'json',
         cache: false,
         url: url,
         data: data,
-        error: function () {
-        },
-        success: function (response) {
-          if (!response || !response.resourceSets || !response.resourceSets[0]) {
-            return;
-          }
-          console.log(response.resourceSets[0].resources);
-          self.collection(response.resourceSets[0].resources.filter(el => el.address.addressLine.indexOf(',') > 0));
-        }
       });
+      if (!response || !response.resourceSets || !response.resourceSets[0]) {
+        return [];
+      }
+      return response.resourceSets[0].resources.filter(el => el.address.addressLine.indexOf(',') > 0);
     }
     item(res) {
       let address = res.address.addressLine.split(',');
@@ -421,33 +409,26 @@
    * @link https://developers.google.com/places/web-service/search
    */
   class GPProvider extends Provider {
-    request(params) {
-      let url = 'https://www.waze.com/maps/api/place/nearbysearch/json';
+    async request(lon, lat) {
+      let url = 'https://' + location.hostname + '/maps/api/place/nearbysearch/json';
       let data = {
-        location: params.lat + ',' + params.lon,
+        location: lat + ',' + lon,
         radius: 40,
         fields: 'geometry,formatted_address',
         types: 'point_of_interest',
         language: 'ua',
         key: 'AIzaSy' + 'CebbES' + 'rWERY1MRZ56gEAfpt7tK2R6hV_I', // extract it from WME
       };
-      let self = this;
-
-      $.ajax({
+      let response = await $.ajax({
         dataType: 'json',
         cache: false,
         url: url,
         data: data,
-        error: function () {
-        },
-        success: function (response) {
-          if (!response.results || !response.results.length) {
-            return;
-          }
-          console.log(response.results);
-          self.collection(response.results);
-        }
       });
+      if (!response.results || !response.results.length) {
+        return [];
+      }
+      return response.results;
     }
 
     item(res) {
@@ -473,8 +454,6 @@
   ;
 
   function ready() {
-    console.info('@ready');
-
     helper = new APIHelperUI(NAME);
 
     panel = helper.createPanel(I18n.t(NAME).title);
@@ -487,8 +466,6 @@
   }
 
   function landmarkPanel(event, element) {
-    console.info('@landmark');
-
     let group = panel.toHTML();
 
     let selected = APIHelper.getSelectedVenues()[0].geometry.getCentroid().clone();
@@ -527,20 +504,17 @@
     let street = this.dataset['street'];
     let number = this.dataset['number'];
 
-    let newName;
-    console.log(poi);
-    console.log(name + ': ' + street + ', ' + number);
-
     // POI Name
+    let newName;
     // If exists ask user to replace or not
     // If not exists - use name or house number as name
-    if (poi.getAttributes().name) {
-      if (name && name !== poi.getAttributes().name) {
-        if (confirm(I18n.t(NAME).questions.changeName + '\n«' + poi.getAttributes().name + '» ⟶ «' + name + '»?')) {
+    if (poi.attributes.name) {
+      if (name && name !== poi.attributes.name) {
+        if (confirm(I18n.t(NAME).questions.changeName + '\n«' + poi.attributes.name + '» ⟶ «' + name + '»?')) {
           newName = name;
         }
-      } else if (number && number !== poi.getAttributes().name) {
-        if (confirm(I18n.t(NAME).questions.changeName + '\n«' + poi.getAttributes().name + '» ⟶ «' + number + '»?')) {
+      } else if (number && number !== poi.attributes.name) {
+        if (confirm(I18n.t(NAME).questions.changeName + '\n«' + poi.attributes.name + '» ⟶ «' + number + '»?')) {
           newName = number;
         }
       }
@@ -554,27 +528,52 @@
     if (newName) {
       W.model.actionManager.add(new WazeActionUpdateObject(poi, {name: newName}));
     }
+
     // POI Address HouseNumber
+    let newHN;
     let addressHN = poi.getAddress().attributes.houseNumber;
     if (number) {
-
-      console.log(poi);
-      // W.model.actionManager.add(new WazeActionUpdateObject(poi, {houseNumber: number}));
-      let address = {
-        countryID: W.model.getTopCountry().getID(),
-        stateID: W.model.getTopState().getID(),
-        houseNumber: number,
-      };
-      // W.model.actionManager.add(new WazeActionUpdateFeatureAddress(poi, address, {updateHouseNumber:true, streetIDField: 'primaryStreetID'}));
-      // W.model.actionManager.add(new WazeActionUpdateObject(poi, {}));
       if (addressHN) {
-
+        if (addressHN !== number) {
+          if (confirm(I18n.t(NAME).questions.changeNumber + '\n«' + addressHN + '» ⟶ «' + number + '»?')) {
+            newHN = number;
+          }
+        } else {
+          newHN = number;
+        }
       } else {
-
+        newHN = number;
+      }
+      if (newHN) {
+        W.model.actionManager.add(new WazeActionUpdateObject(poi, {houseNumber: newHN}));
       }
     }
 
+    if (newName || newHN) {
+      W.selectionManager.setSelectedModels([poi]);
+    }
 
+    // TODO: rewrite it to use multiAction
+    /*
+    let address = {
+      countryID: W.model.getTopCountry().getID(),
+      stateID: W.model.getTopState().getID(),
+      cityName: poi.getAddress().getCityName(),
+      streetName: poi.getAddress().getStreetName(),
+      houseNumber: number,
+    };
+    // Check city
+    address.emptyCity = (address.cityName === null);
+    // Check street
+    address.emptyStreet = (address.streetName === null) || (address.streetName === '');
+
+    let multiAction = new WazeActionMultiAction();
+        multiAction.setModel(W.model);
+
+    multiAction.doSubAction(new WazeActionUpdateFeatureAddress(poi, address, {updateHouseNumber: true}));
+    multiAction.doSubAction(new WazeActionUpdateObject(poi, {houseNumber: number}));
+    W.model.actionManager.add(multiAction);
+    */
     return false;
   }
 

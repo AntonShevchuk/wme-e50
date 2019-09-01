@@ -1,2 +1,7 @@
-# E50
-Get POI information from external sources
+# WME E50
+Fetch information about the POI from external sources
+
+## Links
+Author homepage: http://anton.shevchuk.name/  
+Script homepage: https://github.com/AntonShevchuk/wme-e50/  
+GreasyFork: https://greasyfork.org/uk/scripts/389143-wme-e50-fetch-poi-data  
