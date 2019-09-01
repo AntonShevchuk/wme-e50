@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         WME E50 Fetch POI Data
-// @version      0.0.7
+// @version      0.0.9
 // @description  Fetch information about the POI from external sources
 // @author       Anton Shevchuk
 // @license      MIT License
@@ -124,6 +124,9 @@
     }
 
     collection(results) {
+      if (results.length === 0) {
+        return;
+      }
       let fieldset = document.createElement('fieldset');
       let list = document.createElement('ul');
       list.style.display = results.length > 2 ? 'none' : 'block';
@@ -157,11 +160,12 @@
       return this;
     }
 
-    link(lon, lat, street, number, name = null) {
+    link(lon, lat, city, street, number, name = null) {
       let a = document.createElement('a');
           a.href = '#';
           a.dataset.lat = lat;
           a.dataset.lon = lon;
+          a.dataset.city = city ? city.trim() : '';
           a.dataset.street = street ? street.trim() : '';
           a.dataset.number = number ? number.trim() : '';
           a.dataset.name = name ? name.trim() : '';
@@ -200,8 +204,12 @@
     }
     item(res) {
       let output = [];
+      let city = null;
       let street = null;
       let number = null;
+      if (res.address.city) {
+        city = res.address.city;
+      }
       if (res.address.road) {
         street = res.address.road;
       }
@@ -210,7 +218,7 @@
       } else {
         output.push(res.display_name.split(', ', 1));
       }
-      return this.link(res.lon, res.lat, street, number, output.join(', '));
+      return this.link(res.lon, res.lat, city, street, number, output.join(', '));
     }
   }
 
@@ -225,7 +233,7 @@
         point: lon + ',' + lat,
         radius: 20,
         type: 'building',
-        fields: 'items.address,items.geometry.centroid',
+        fields: 'items.address,items.adm_div,items.geometry.centroid',
         locale: 'uk_UA',
         format: 'json',
         key: 'rubnkm' + '7490',
@@ -244,8 +252,16 @@
 
     item(res) {
       let output = [];
+      let city = null;
       let street = null;
       let number = null;
+      if (res.adm_div.length) {
+        for (let i = 0; i < res.adm_div.length; i++) {
+          if (res.adm_div[i]['type'] === 'city') {
+            city = res.adm_div[i]['name'];
+          }
+        }
+      }
       if (res.address.components) { // optional
         street = res.address.components[0].street;
         number = res.address.components[0].number;
@@ -259,7 +275,7 @@
       let lon = center[0];
       let lat = center[1];
 
-      let link = this.link(lon, lat, street, number, output.join(', '));
+      let link = this.link(lon, lat, city, street, number, output.join(', '));
       if (res.purpose_name) {
         link.title = res.purpose_name;
       }
@@ -298,10 +314,14 @@
       let center = res.Point.pos.split(' ');
       let lon = center[0];
       let lat = center[1];
+      let city = null;
       let street = null;
       let number = null;
       if (res.metaDataProperty.GeocoderMetaData.Address.Components) {
         for (let el in res.metaDataProperty.GeocoderMetaData.Address.Components) {
+          if (res.metaDataProperty.GeocoderMetaData.Address.Components[el]['kind'] === 'locality') {
+            city = res.metaDataProperty.GeocoderMetaData.Address.Components[el]['name'];
+          }
           if (res.metaDataProperty.GeocoderMetaData.Address.Components[el]['kind'] === 'street') {
             street = res.metaDataProperty.GeocoderMetaData.Address.Components[el]['name'];
           }
@@ -313,6 +333,7 @@
       let link = this.link(
         lon,
         lat,
+        city,
         street,
         number
       );
@@ -353,6 +374,7 @@
       return this.link(
         res.Location.DisplayPosition.Longitude,
         res.Location.DisplayPosition.Latitude,
+        res.Location.Address.City,
         res.Location.Address.Street,
         res.Location.Address.HouseNumber
       );
@@ -389,19 +411,11 @@
       return this.link(
         res.point.coordinates[1],
         res.point.coordinates[0],
+        res.address.locality,
         address[0],
         address[1]
       );
     }
-  }
-
-  /**
-   * Map Quest
-   * @link https://developer.mapquest.com/documentation/
-   * http://open.mapquestapi.com/geocoding/v1/reverse?key=HFk67kfdVFGRYDtlFTRNoDUfHu1HwgEa&location=30.333472,-81.470448
-   */
-  class MQProvider extends Provider {
-
   }
 
   /**
@@ -435,6 +449,7 @@
       let link = this.link(
         res.geometry.location.lng,
         res.geometry.location.lat,
+        null,
         null,
         null,
         res.name
@@ -501,8 +516,9 @@
   function applyData() {
     let poi = APIHelper.getSelectedVenues()[0];
     let name = this.dataset['name'];
-    let street = this.dataset['street'];
-    let number = this.dataset['number'];
+    let city = this.dataset['city'];
+    let street = normalizeStreet(this.dataset['street']);
+    let number = normalizeNumber(this.dataset['number']);
 
     // POI Name
     let newName;
@@ -510,11 +526,11 @@
     // If not exists - use name or house number as name
     if (poi.attributes.name) {
       if (name && name !== poi.attributes.name) {
-        if (confirm(I18n.t(NAME).questions.changeName + '\n«' + poi.attributes.name + '» ⟶ «' + name + '»?')) {
+        if (window.confirm(I18n.t(NAME).questions.changeName + '\n«' + poi.attributes.name + '» ⟶ «' + name + '»?')) {
           newName = name;
         }
       } else if (number && number !== poi.attributes.name) {
-        if (confirm(I18n.t(NAME).questions.changeName + '\n«' + poi.attributes.name + '» ⟶ «' + number + '»?')) {
+        if (window.confirm(I18n.t(NAME).questions.changeName + '\n«' + poi.attributes.name + '» ⟶ «' + number + '»?')) {
           newName = number;
         }
       }
@@ -535,11 +551,9 @@
     if (number) {
       if (addressHN) {
         if (addressHN !== number) {
-          if (confirm(I18n.t(NAME).questions.changeNumber + '\n«' + addressHN + '» ⟶ «' + number + '»?')) {
+          if (window.confirm(I18n.t(NAME).questions.changeNumber + '\n«' + addressHN + '» ⟶ «' + number + '»?')) {
             newHN = number;
           }
-        } else {
-          newHN = number;
         }
       } else {
         newHN = number;
@@ -549,7 +563,55 @@
       }
     }
 
-    if (newName || newHN) {
+    // POI Address Street Name
+    let newStreet;
+    let addressStreet = poi.getAddress().getStreet().name;
+    if (street) {
+      if (addressStreet) {
+        if (addressStreet !== street) {
+          if (window.confirm(I18n.t(NAME).questions.changeName + '\n«' + addressStreet + '» ⟶ «' + street + '»?')) {
+            newStreet = street;
+          }
+        }
+      } else {
+        newStreet = street;
+      }
+      if (newStreet) {
+        let address = {
+          countryID: W.model.getTopCountry().getID(),
+          stateID: W.model.getTopState().getID(),
+          cityName: poi.getAddress().getCityName(),
+          streetName: newStreet
+        };
+        W.model.actionManager.add(new WazeActionUpdateFeatureAddress(poi, address));
+      }
+    }
+
+    // POI Address City
+    let newCity;
+    let addressCity = poi.getAddress().getCity().name;
+    if (city) {
+      if (addressCity) {
+        if (addressCity !== city) {
+          if (window.confirm(I18n.t(NAME).questions.changeName + '\n«' + addressCity + '» ⟶ «' + city + '»?')) {
+            newCity = city;
+          }
+        }
+      } else {
+        newCity = city;
+      }
+      if (newCity) {
+        let address = {
+          countryID: W.model.getTopCountry().getID(),
+          stateID: W.model.getTopState().getID(),
+          cityName: newCity,
+          streetName: poi.getAddress().getStreetName()
+        };
+        W.model.actionManager.add(new WazeActionUpdateFeatureAddress(poi, address));
+      }
+    }
+
+    if (newName || newHN || newStreet || newCity) {
       W.selectionManager.setSelectedModels([poi]);
     }
 
@@ -575,6 +637,35 @@
     W.model.actionManager.add(multiAction);
     */
     return false;
+  }
+
+  function normalizeNumber(number) {
+    return number;
+  }
+
+  function normalizeStreet(street) {
+    // let streets = W.model.streets.getObjectArray().filter(m => m.name !== null).map(m => m.name);
+
+    let regs = {
+      "(^|.+?) ?бульвар ?(.+|$)": "б-р $1$2",
+      "(^|.+?) ?вулиця ?(.+|$)": "вул. $1$2",
+      "(^|.+?) ?мікрорайон ?(.+|$)": "мкрн. $1$2",
+      "(^|.+?) ?набережна ?(.+|$)": "наб. $1$2",
+      "(^|.+?) ?провулок ?(.+|$)": "пров. $1$2",
+      "(^|.+?) ?проїзд ?(.+|$)": "пр. $1$2",
+      "(^|.+?) ?проспект ?(.+|$)": "просп. $1$2",
+      "(^|.+?) ?станція ?(.+|$)": "ст. $1$2",
+    };
+
+    for (let key in regs) {
+      let re = new RegExp(key, 'i');
+      if (re.test(street)) {
+        street = street.replace(re, regs[key]);
+        break;
+      }
+    }
+
+    return street;
   }
 
   function showVector() {
