@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         WME E50 Fetch POI Data
-// @version      0.0.9
+// @version      0.0.10
 // @description  Fetch information about the POI from external sources
 // @author       Anton Shevchuk
 // @license      MIT License
@@ -13,7 +13,7 @@
 // @grant        none
 // @require      https://greasyfork.org/scripts/24851-wazewrap/code/WazeWrap.js
 // @require      https://greasyfork.org/scripts/389117-apihelper/code/APIHelper.js?version=729417
-// @require      https://greasyfork.org/scripts/389577-apihelperui/code/APIHelperUI.js?version=729353
+// @require      https://greasyfork.org/scripts/389577-apihelperui/code/APIHelperUI.js?version=730144
 // @namespace    https://greasyfork.org/users/227648
 // ==/UserScript==
 
@@ -22,7 +22,7 @@
 (function () {
   'use strict';
 
-  let helper, panel;
+  let helper, modal;
   let vectorLayer, vectorPoint, vectorLine;
 
   const NAME = 'E50';
@@ -33,6 +33,8 @@
       title: 'Information',
       questions: {
         changeName: 'Are you sure to change the name?',
+        changeCity: 'Are you sure to change the city?',
+        changeStreet: 'Are you sure to change the street name?',
         changeNumber: 'Are you sure to change the house number?',
       }
     },
@@ -40,6 +42,8 @@
       title: 'Інформація',
       questions: {
         changeName: 'Ви впевненні що хочете змінити им\'я?',
+        changeCity: 'Ви впевненні що хочете змінити місто?',
+        changeStreet: 'Ви впевненні що хочете змінити вулицю?',
         changeNumber: 'Ви впевненні що хочете змінити номер дома?',
       }
     },
@@ -47,6 +51,8 @@
       title: 'Информация',
       questions: {
         changeName: 'Ви уверены, что хотите изменить имя?',
+        changeCity: 'Ви уверены, что хотите изменить город?',
+        changeStreet: 'Ви уверены, что хотите изменить улицу?',
         changeNumber: 'Ви уверены, что хотите изменить номер дома?',
       }
     }
@@ -119,8 +125,9 @@
     panel(parent) {
       let div = document.createElement('div');
       div.id = 'E50-' + this.uid;
+      div.className = 'e50';
       this.container = div;
-      parent.append(this.container);
+      parent.querySelector('.body').append(this.container);
     }
 
     collection(results) {
@@ -462,6 +469,7 @@
 
   $(document)
     .on('ready.apihelper', ready)
+    .on('none.apihelper', clearPanel)
     .on('landmark.apihelper', landmarkPanel)
     .on('click', '.' + NAME + '-link', applyData)
     .on('mouseenter', '.' + NAME + '-link', showVector)
@@ -471,7 +479,7 @@
   function ready() {
     helper = new APIHelperUI(NAME);
 
-    panel = helper.createPanel(I18n.t(NAME).title);
+    modal = helper.createModal(I18n.t(NAME).title);
 
     vectorLayer = new OL.Layer.Vector("E50VectorLayer", {
       displayInLayerSwitcher: false,
@@ -480,40 +488,47 @@
     W.map.addLayer(vectorLayer);
   }
 
+  function clearPanel() {
+    document.getElementById('panel-container').innerHTML = '';
+  }
+
   function landmarkPanel(event, element) {
-    let group = panel.toHTML();
+    let modalHTML = modal.toHTML();
 
     let selected = APIHelper.getSelectedVenues()[0].geometry.getCentroid().clone();
     selected.transform('EPSG:900913', 'EPSG:4326');
 
     let Osm = new OsmProvider('OSM');
-    Osm.panel(group);
+    Osm.panel(modalHTML);
     Osm.search(selected.x, selected.y);
 
     let Gis = new GisProvider('2Gis');
-    Gis.panel(group);
+    Gis.panel(modalHTML);
     Gis.search(selected.x, selected.y);
 
     let Yandex = new YMProvider('Yandex');
-    Yandex.panel(group);
+    Yandex.panel(modalHTML);
     Yandex.search(selected.x, selected.y);
 
     let Here = new HereProvider('Here');
-    Here.panel(group);
+    Here.panel(modalHTML);
     Here.search(selected.x, selected.y);
 
     let Bing = new BingProvider('Bing');
-    Bing.panel(group);
+    Bing.panel(modalHTML);
     Bing.search(selected.x, selected.y);
 
     let Google = new GPProvider('Google');
-    Google.panel(group);
+    Google.panel(modalHTML);
     Google.search(selected.x, selected.y);
 
-    element.prepend(group);
+    document.getElementById('panel-container').append(modalHTML);
+    //element.prepend(group);
   }
 
-  function applyData() {
+  function applyData(event) {
+    event.preventDefault();
+
     let poi = APIHelper.getSelectedVenues()[0];
     let name = this.dataset['name'];
     let city = this.dataset['city'];
@@ -569,7 +584,7 @@
     if (street) {
       if (addressStreet) {
         if (addressStreet !== street) {
-          if (window.confirm(I18n.t(NAME).questions.changeName + '\n«' + addressStreet + '» ⟶ «' + street + '»?')) {
+          if (window.confirm(I18n.t(NAME).questions.changeStreet + '\n«' + addressStreet + '» ⟶ «' + street + '»?')) {
             newStreet = street;
           }
         }
@@ -589,11 +604,11 @@
 
     // POI Address City
     let newCity;
-    let addressCity = poi.getAddress().getCity().name;
+    let addressCity = poi.getAddress().getCity().getName();
     if (city) {
       if (addressCity) {
         if (addressCity !== city) {
-          if (window.confirm(I18n.t(NAME).questions.changeName + '\n«' + addressCity + '» ⟶ «' + city + '»?')) {
+          if (window.confirm(I18n.t(NAME).questions.changeCity + '\n«' + addressCity + '» ⟶ «' + city + '»?')) {
             newCity = city;
           }
         }
@@ -636,7 +651,6 @@
     multiAction.doSubAction(new WazeActionUpdateObject(poi, {houseNumber: number}));
     W.model.actionManager.add(multiAction);
     */
-    return false;
   }
 
   function normalizeNumber(number) {
