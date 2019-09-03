@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         WME E50 Fetch POI Data
-// @version      0.0.11
+// @version      0.0.12
 // @description  Fetch information about the POI from external sources
 // @author       Anton Shevchuk
 // @license      MIT License
@@ -12,8 +12,8 @@
 // @exclude      https://beta.waze.com/user/editor*
 // @grant        none
 // @require      https://greasyfork.org/scripts/24851-wazewrap/code/WazeWrap.js
-// @require      https://greasyfork.org/scripts/389117-apihelper/code/APIHelper.js?version=729417
-// @require      https://greasyfork.org/scripts/389577-apihelperui/code/APIHelperUI.js?version=730144
+// @require      https://greasyfork.org/scripts/389117-apihelper/code/APIHelper.js?version=729842
+// @require      https://greasyfork.org/scripts/389577-apihelperui/code/APIHelperUI.js?version=730392
 // @namespace    https://greasyfork.org/users/227648
 // ==/UserScript==
 
@@ -22,7 +22,7 @@
 (function () {
   'use strict';
 
-  let helper, modal;
+  let helper, tab, modal;
   let vectorLayer, vectorPoint, vectorLine;
 
   const NAME = 'E50';
@@ -117,6 +117,8 @@
           result = await this.request(lon, lat);
           E50Cache.set(key, result);
         }
+
+        console.log(this.uid, result);
         this.collection(result);
       } catch (e) {
         console.error(e);
@@ -125,8 +127,8 @@
 
     panel(parent) {
       let div = document.createElement('div');
-      div.id = 'E50-' + this.uid;
-      div.className = 'e50';
+          div.id = 'E50-' + this.uid;
+          div.className = 'e50';
       this.container = div;
       parent.querySelector('.body').append(this.container);
     }
@@ -169,13 +171,22 @@
     }
 
     link(lon, lat, city, street, number, name = null) {
+      if (city) {
+        city = city.trim();
+      }
+      if (street) {
+        street = normalizeStreet(street.trim());
+      }
+      if (number) {
+        number = normalizeNumber(number.trim());
+      }
       let a = document.createElement('a');
           a.href = '#';
           a.dataset.lat = lat;
           a.dataset.lon = lon;
-          a.dataset.city = city ? city.trim() : '';
-          a.dataset.street = street ? street.trim() : '';
-          a.dataset.number = number ? number.trim() : '';
+          a.dataset.city = city;
+          a.dataset.street = street;
+          a.dataset.number = number;
           a.dataset.name = name ? name.trim() : '';
           a.innerHTML = [street, number, name].filter(x => !!x).join(', ');
           a.className = NAME + '-link';
@@ -454,16 +465,23 @@
     }
 
     item(res) {
+      let address = res.vicinity.split(',');
+      let city = address[2] ? address[2].trim() : null;
+      let street = address[0] ? address[0].trim() : null;
+      let number = address[1] ? address[1].trim() : null;
+
+
       let link = this.link(
         res.geometry.location.lng,
         res.geometry.location.lat,
-        null,
-        null,
-        null,
+        city,
+        street,
+        number,
         res.name
       );
-      link.className += ' noaddress';
-      link.innerHTML += ', ' + res.vicinity;
+      if (!city && !street && !number) {
+        link.className += ' noaddress';
+      }
       return link;
     }
   }
@@ -481,6 +499,16 @@
     helper = new APIHelperUI(NAME);
 
     modal = helper.createModal(I18n.t(NAME).title);
+
+    tab = helper.createTab(I18n.t(NAME).title);
+
+    let fieldset = helper.createFieldset(I18n.t(NAME).title);
+        fieldset.addCheckbox('OSM', 'OSM Provider', 'Fetch information from OSM', function(event) {
+          console.log(event.target.name, event.target.checked);
+        });
+
+    tab.addElement(fieldset);
+    tab.container().append(tab.toHTML());
 
     vectorLayer = new OL.Layer.Vector("E50VectorLayer", {
       displayInLayerSwitcher: false,
@@ -524,8 +552,7 @@
     Google.panel(modalHTML);
     Google.search(selected.x, selected.y);
 
-    document.getElementById('panel-container').append(modalHTML);
-    //element.prepend(group);
+    modal.container().append(modalHTML);
   }
 
   function applyData(event) {
@@ -534,8 +561,8 @@
     let poi = APIHelper.getSelectedVenues()[0];
     let name = this.dataset['name'];
     let city = this.dataset['city'];
-    let street = normalizeStreet(this.dataset['street']);
-    let number = normalizeNumber(this.dataset['number']);
+    let street = this.dataset['street'];
+    let number = this.dataset['number'];
 
     // POI Name
     let newName;
@@ -628,7 +655,6 @@
       }
     }
 
-
     if (newName || newHN || newStreet || newCity) {
       W.selectionManager.setSelectedModels([poi]);
     }
@@ -657,21 +683,32 @@
   }
 
   function normalizeNumber(number) {
+    // і,з,о
+    number = number.toUpperCase();
+    number = number.replace('І', 'і');
+    number = number.replace('З', 'з');
+    number = number.replace('О', 'о');
+
+    // \d( ?)к(орп)?\d
+    let korp = new RegExp(/(\d+)\s?к(?:орп)?\s?(\d+)/, 'gi');
+    if (korp.test(number)) {
+      number = number.replace(korp, '$1к$2');
+    }
+
     return number;
   }
 
   function normalizeStreet(street) {
     // let streets = W.model.streets.getObjectArray().filter(m => m.name !== null).map(m => m.name);
-
     let regs = {
-      "(^|.+?) ?бульвар ?(.+|$)": "б-р $1$2",
-      "(^|.+?) ?вулиця ?(.+|$)": "вул. $1$2",
-      "(^|.+?) ?мікрорайон ?(.+|$)": "мкрн. $1$2",
-      "(^|.+?) ?набережна ?(.+|$)": "наб. $1$2",
-      "(^|.+?) ?провулок ?(.+|$)": "пров. $1$2",
-      "(^|.+?) ?проїзд ?(.+|$)": "пр. $1$2",
-      "(^|.+?) ?проспект ?(.+|$)": "просп. $1$2",
-      "(^|.+?) ?станція ?(.+|$)": "ст. $1$2",
+      '(^|.+?) ?бульвар ?(.+|$)': 'б-р $1$2',
+      '(^|.+?) ?вулиця ?(.+|$)': 'вул. $1$2',
+      '(^|.+?) ?мікрорайон ?(.+|$)': 'мкрн. $1$2',
+      '(^|.+?) ?набережна ?(.+|$)': 'наб. $1$2',
+      '(^|.+?) ?провулок ?(.+|$)': 'пров. $1$2',
+      '(^|.+?) ?проїзд ?(.+|$)': 'пр. $1$2',
+      '(^|.+?) ?проспект ?(.+|$)': 'просп. $1$2',
+      '(^|.+?) ?станція ?(.+|$)': 'ст. $1$2',
     };
 
     for (let key in regs) {
