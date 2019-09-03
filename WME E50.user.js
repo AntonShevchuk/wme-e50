@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         WME E50 Fetch POI Data
-// @version      0.0.12
+// @version      0.0.13
 // @description  Fetch information about the POI from external sources
 // @author       Anton Shevchuk
 // @license      MIT License
@@ -14,11 +14,12 @@
 // @require      https://greasyfork.org/scripts/24851-wazewrap/code/WazeWrap.js
 // @require      https://greasyfork.org/scripts/389117-apihelper/code/APIHelper.js?version=729842
 // @require      https://greasyfork.org/scripts/389577-apihelperui/code/APIHelperUI.js?version=730392
+// @require      https://greasyfork.org/scripts/38421-wme-utils-navigationpoint/code/WME%20Utils%20-%20NavigationPoint.js?version=251067
 // @namespace    https://greasyfork.org/users/227648
 // ==/UserScript==
 
 /* jshint esversion: 8 */
-/* global require, $, window, W, I18n, OL, APIHelper, APIHelperUI, WazeWrap */
+/* global require, $, window, W, I18n, OL, APIHelper, APIHelperUI, WazeWrap, NavigationPoint */
 (function () {
   'use strict';
 
@@ -70,7 +71,7 @@
     '.e50 li a:hover { background: #ddd }' +
     '.e50 li a.noaddress { background: rgba(255, 255, 200, 0.5) }' +
     '.e50 li a.noaddress:hover { background: rgba(255, 255, 200, 1) }' +
-    '.archive-panel .body {  overflow-x: auto; max-height: 480px; }'
+    '#panel-container .archive-panel .body { overflow-x: auto; max-height: 420px; }'
   );
 
   let WazeActionMultiAction = require('Waze/Action/MultiAction');
@@ -466,9 +467,9 @@
 
     item(res) {
       let address = res.vicinity.split(',');
-      let city = address[2] ? address[2].trim() : null;
-      let street = address[0] ? address[0].trim() : null;
-      let number = address[1] ? address[1].trim() : null;
+      let city = address[2] ? address[2].trim() : '';
+      let street = address[0] && address[0].length > 8 ? address[0].trim() : '';
+      let number = /\d+/.test(address[1]) ? address[1].trim() : '';
 
 
       let link = this.link(
@@ -479,7 +480,7 @@
         number,
         res.name
       );
-      if (!city && !street && !number) {
+      if (!city || !street || !number) {
         link.className += ' noaddress';
       }
       return link;
@@ -589,30 +590,6 @@
       W.model.actionManager.add(new WazeActionUpdateObject(poi, {name: newName}));
     }
 
-    // POI Address City
-    let newCity;
-    let addressCity = poi.getAddress().getCity().getName();
-    if (city) {
-      if (addressCity) {
-        if (addressCity !== city) {
-          if (window.confirm(I18n.t(NAME).questions.changeCity + '\n«' + addressCity + '» ⟶ «' + city + '»?')) {
-            newCity = city;
-          }
-        }
-      } else {
-        newCity = city;
-      }
-      if (newCity) {
-        let address = {
-          countryID: W.model.getTopCountry().getID(),
-          stateID: W.model.getTopState().getID(),
-          cityName: newCity,
-          streetName: poi.getAddress().getStreetName()
-        };
-        W.model.actionManager.add(new WazeActionUpdateFeatureAddress(poi, address));
-      }
-    }
-
     // POI Address HouseNumber
     let newHN;
     let addressHN = poi.getAddress().attributes.houseNumber;
@@ -644,15 +621,36 @@
       } else {
         newStreet = street;
       }
-      if (newStreet) {
-        let address = {
-          countryID: W.model.getTopCountry().getID(),
-          stateID: W.model.getTopState().getID(),
-          cityName: poi.getAddress().getCityName(),
-          streetName: newStreet
-        };
-        W.model.actionManager.add(new WazeActionUpdateFeatureAddress(poi, address));
+    }
+
+    // POI Address City
+    let newCity;
+    let addressCity = poi.getAddress().getCity().getName();
+    if (city) {
+      if (addressCity) {
+        if (addressCity !== city) {
+          if (window.confirm(I18n.t(NAME).questions.changeCity + '\n«' + addressCity + '» ⟶ «' + city + '»?')) {
+            newCity = city;
+          }
+        }
+      } else {
+        newCity = city;
       }
+    }
+    if (newCity || newStreet) {
+      let address = {
+        countryID: W.model.getTopCountry().getID(),
+        stateID: W.model.getTopState().getID(),
+        cityName: newCity ? newCity : poi.getAddress().getCityName(),
+        streetName: newStreet ? newStreet : poi.getAddress().getStreetName()
+      };
+      W.model.actionManager.add(new WazeActionUpdateFeatureAddress(poi, address));
+    }
+
+    // If no entry point we would create it
+    if (poi.attributes.entryExitPoints.length === 0) {
+      let navPoint = new NavigationPoint(poi.geometry.getCentroid());
+      W.model.actionManager.add(new WazeActionUpdateObject(poi, {entryExitPoints: [navPoint]}));
     }
 
     if (newName || newHN || newStreet || newCity) {
