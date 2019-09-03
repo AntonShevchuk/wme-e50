@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         WME E50 Fetch POI Data
-// @version      0.0.10
+// @version      0.0.11
 // @description  Fetch information about the POI from external sources
 // @author       Anton Shevchuk
 // @license      MIT License
@@ -69,7 +69,8 @@
     '.e50 li a { display: block; padding: 2px 4px; text-decoration: none; border: 1px solid #e4e4e4; }' +
     '.e50 li a:hover { background: #ddd }' +
     '.e50 li a.noaddress { background: rgba(255, 255, 200, 0.5) }' +
-    '.e50 li a.noaddress:hover { background: rgba(255, 255, 200, 1) }'
+    '.e50 li a.noaddress:hover { background: rgba(255, 255, 200, 1) }' +
+    '.archive-panel .body {  overflow-x: auto; max-height: 480px; }'
   );
 
   let WazeActionMultiAction = require('Waze/Action/MultiAction');
@@ -490,6 +491,7 @@
 
   function clearPanel() {
     document.getElementById('panel-container').innerHTML = '';
+    hideVector();
   }
 
   function landmarkPanel(event, element) {
@@ -560,6 +562,30 @@
       W.model.actionManager.add(new WazeActionUpdateObject(poi, {name: newName}));
     }
 
+    // POI Address City
+    let newCity;
+    let addressCity = poi.getAddress().getCity().getName();
+    if (city) {
+      if (addressCity) {
+        if (addressCity !== city) {
+          if (window.confirm(I18n.t(NAME).questions.changeCity + '\n«' + addressCity + '» ⟶ «' + city + '»?')) {
+            newCity = city;
+          }
+        }
+      } else {
+        newCity = city;
+      }
+      if (newCity) {
+        let address = {
+          countryID: W.model.getTopCountry().getID(),
+          stateID: W.model.getTopState().getID(),
+          cityName: newCity,
+          streetName: poi.getAddress().getStreetName()
+        };
+        W.model.actionManager.add(new WazeActionUpdateFeatureAddress(poi, address));
+      }
+    }
+
     // POI Address HouseNumber
     let newHN;
     let addressHN = poi.getAddress().attributes.houseNumber;
@@ -602,29 +628,6 @@
       }
     }
 
-    // POI Address City
-    let newCity;
-    let addressCity = poi.getAddress().getCity().getName();
-    if (city) {
-      if (addressCity) {
-        if (addressCity !== city) {
-          if (window.confirm(I18n.t(NAME).questions.changeCity + '\n«' + addressCity + '» ⟶ «' + city + '»?')) {
-            newCity = city;
-          }
-        }
-      } else {
-        newCity = city;
-      }
-      if (newCity) {
-        let address = {
-          countryID: W.model.getTopCountry().getID(),
-          stateID: W.model.getTopState().getID(),
-          cityName: newCity,
-          streetName: poi.getAddress().getStreetName()
-        };
-        W.model.actionManager.add(new WazeActionUpdateFeatureAddress(poi, address));
-      }
-    }
 
     if (newName || newHN || newStreet || newCity) {
       W.selectionManager.setSelectedModels([poi]);
