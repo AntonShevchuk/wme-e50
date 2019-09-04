@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         WME E50 Fetch POI Data
-// @version      0.0.13
+// @version      0.0.14
 // @description  Fetch information about the POI from external sources
 // @author       Anton Shevchuk
 // @license      MIT License
@@ -11,15 +11,16 @@
 // @exclude      https://www.waze.com/user/editor*
 // @exclude      https://beta.waze.com/user/editor*
 // @grant        none
+// @require      https://greasyfork.org/scripts/389765-common-utils/code/CommonUtils.js?version=730610
 // @require      https://greasyfork.org/scripts/24851-wazewrap/code/WazeWrap.js
 // @require      https://greasyfork.org/scripts/389117-apihelper/code/APIHelper.js?version=729842
-// @require      https://greasyfork.org/scripts/389577-apihelperui/code/APIHelperUI.js?version=730392
+// @require      https://greasyfork.org/scripts/389577-apihelperui/code/APIHelperUI.js?version=730559
 // @require      https://greasyfork.org/scripts/38421-wme-utils-navigationpoint/code/WME%20Utils%20-%20NavigationPoint.js?version=251067
 // @namespace    https://greasyfork.org/users/227648
 // ==/UserScript==
 
 /* jshint esversion: 8 */
-/* global require, $, window, W, I18n, OL, APIHelper, APIHelperUI, WazeWrap, NavigationPoint */
+/* global require, $, window, W, I18n, OL, APIHelper, APIHelperUI, WazeWrap, NavigationPoint, Cache, Settings */
 (function () {
   'use strict';
 
@@ -32,6 +33,15 @@
   const TRANSLATION = {
     'en': {
       title: 'Information',
+      providers: {
+        settings: 'Providers',
+        osm: 'Open Street Map',
+        gis: '2GIS',
+        bing: 'Bing',
+        here: 'HERE',
+        google: 'Google',
+        yandex: 'Yandex',
+      },
       questions: {
         changeName: 'Are you sure to change the name?',
         changeCity: 'Are you sure to change the city?',
@@ -41,6 +51,15 @@
     },
     'uk': {
       title: 'Інформація',
+      providers: {
+        settings: 'Джерела',
+        osm: 'Open Street Map',
+        gis: '2GIS',
+        bing: 'Bing',
+        here: 'HERE',
+        google: 'Google',
+        yandex: 'Яндекс',
+      },
       questions: {
         changeName: 'Ви впевненні що хочете змінити им\'я?',
         changeCity: 'Ви впевненні що хочете змінити місто?',
@@ -50,12 +69,32 @@
     },
     'ru': {
       title: 'Информация',
+      providers: {
+        settings: 'Источники',
+        osm: 'Open Street Map',
+        gis: '2GIS',
+        bing: 'Bing',
+        here: 'HERE',
+        google: 'Google',
+        yandex: 'Яндекс',
+      },
       questions: {
         changeName: 'Ви уверены, что хотите изменить имя?',
         changeCity: 'Ви уверены, что хотите изменить город?',
         changeStreet: 'Ви уверены, что хотите изменить улицу?',
         changeNumber: 'Ви уверены, что хотите изменить номер дома?',
       }
+    }
+  };
+
+  const settings = {
+    providers: {
+      osm: true,
+      gis: true,
+      bing: true,
+      here: true,
+      google: true,
+      yandex: true,
     }
   };
 
@@ -78,27 +117,12 @@
   let WazeActionUpdateObject = require('Waze/Action/UpdateObject');
   let WazeActionUpdateFeatureAddress = require('Waze/Action/UpdateFeatureAddress');
 
-  class Cache {
-    constructor() {
-      this.cache = {};
-    }
-    set(key, value) {
-      this.cache[key] = value;
-    }
-    get(key) {
-      if (this.has(key)) {
-        return this.cache[key];
-      } else {
-        return null;
-      }
-    }
-    has(key) {
-      return (typeof this.cache[key] !== 'undefined');
-    }
-  }
-
   let E50Cache = new Cache();
+  let E50Settings = new Settings(NAME, settings);
 
+  /**
+   * Basic Provider class
+   */
   class Provider {
     constructor(uid) {
       this.uid = uid;
@@ -496,6 +520,8 @@
     .on('mouseleave', '.' + NAME + '-link', hideVector)
   ;
 
+  $(window).on('beforeunload', () => E50Settings.save());
+
   function ready() {
     helper = new APIHelperUI(NAME);
 
@@ -503,10 +529,14 @@
 
     tab = helper.createTab(I18n.t(NAME).title);
 
-    let fieldset = helper.createFieldset(I18n.t(NAME).title);
-        fieldset.addCheckbox('OSM', 'OSM Provider', 'Fetch information from OSM', function(event) {
-          console.log(event.target.name, event.target.checked);
-        });
+    // Setup providers settings
+    let fieldset = helper.createFieldset(I18n.t(NAME).providers.settings);
+    let providers = E50Settings.get('providers');
+    for (let source in providers) {
+      fieldset.addCheckbox(source, I18n.t(NAME).providers[source], I18n.t(NAME).providers[source], function(event) {
+        E50Settings.set(['providers', source], event.target.checked);
+      }, E50Settings.get('providers', source));
+    }
 
     tab.addElement(fieldset);
     tab.container().append(tab.toHTML());
@@ -518,44 +548,68 @@
     W.map.addLayer(vectorLayer);
   }
 
+  /**
+   * Clear modal panel
+   */
   function clearPanel() {
     document.getElementById('panel-container').innerHTML = '';
     hideVector();
   }
 
+  /**
+   * Create and fill modal panel
+   * @param event
+   * @param element
+   */
   function landmarkPanel(event, element) {
     let modalHTML = modal.toHTML();
 
     let selected = APIHelper.getSelectedVenues()[0].geometry.getCentroid().clone();
     selected.transform('EPSG:900913', 'EPSG:4326');
 
-    let Osm = new OsmProvider('OSM');
-    Osm.panel(modalHTML);
-    Osm.search(selected.x, selected.y);
+    if (E50Settings.get('providers').osm) {
+      let Osm = new OsmProvider('OSM');
+      Osm.panel(modalHTML);
+      Osm.search(selected.x, selected.y);
+    }
 
-    let Gis = new GisProvider('2Gis');
-    Gis.panel(modalHTML);
-    Gis.search(selected.x, selected.y);
+    if (E50Settings.get('providers').gis) {
+      let Gis = new GisProvider('2Gis');
+      Gis.panel(modalHTML);
+      Gis.search(selected.x, selected.y);
+    }
 
-    let Yandex = new YMProvider('Yandex');
-    Yandex.panel(modalHTML);
-    Yandex.search(selected.x, selected.y);
+    if (E50Settings.get('providers').yandex) {
+      let Yandex = new YMProvider('Yandex');
+      Yandex.panel(modalHTML);
+      Yandex.search(selected.x, selected.y);
+    }
 
-    let Here = new HereProvider('Here');
-    Here.panel(modalHTML);
-    Here.search(selected.x, selected.y);
+    if (E50Settings.get('providers').here) {
+      let Here = new HereProvider('Here');
+      Here.panel(modalHTML);
+      Here.search(selected.x, selected.y);
+    }
 
-    let Bing = new BingProvider('Bing');
-    Bing.panel(modalHTML);
-    Bing.search(selected.x, selected.y);
+    if (E50Settings.get('providers').bing) {
+      let Bing = new BingProvider('Bing');
+      Bing.panel(modalHTML);
+      Bing.search(selected.x, selected.y);
+    }
 
-    let Google = new GPProvider('Google');
-    Google.panel(modalHTML);
-    Google.search(selected.x, selected.y);
+    if (E50Settings.get('providers').google) {
+      let Google = new GPProvider('Google');
+      Google.panel(modalHTML);
+      Google.search(selected.x, selected.y);
+    }
 
     modal.container().append(modalHTML);
   }
 
+  /**
+   * Apply data to current selected POI
+   * @param event
+   */
   function applyData(event) {
     event.preventDefault();
 
@@ -628,7 +682,7 @@
     let addressCity = poi.getAddress().getCity().getName();
     if (city) {
       if (addressCity) {
-        if (addressCity !== city) {
+        if (!(new RegExp(city, 'i')).test(addressCity)) {
           if (window.confirm(I18n.t(NAME).questions.changeCity + '\n«' + addressCity + '» ⟶ «' + city + '»?')) {
             newCity = city;
           }
@@ -680,6 +734,11 @@
     */
   }
 
+  /**
+   * Normalize house number
+   * @param  {string} number
+   * @return {string}
+   */
   function normalizeNumber(number) {
     // і,з,о
     number = number.toUpperCase();
@@ -696,13 +755,20 @@
     return number;
   }
 
+  /**
+   * Normalize street name
+   * @param  {string} street
+   * @return {string}
+   */
   function normalizeStreet(street) {
     // let streets = W.model.streets.getObjectArray().filter(m => m.name !== null).map(m => m.name);
     let regs = {
       '(^|.+?) ?бульвар ?(.+|$)': 'б-р $1$2',
       '(^|.+?) ?вулиця ?(.+|$)': 'вул. $1$2',
+      '(^|.+?) ?дорога ?(.+|$)': 'дор. $1$2',
       '(^|.+?) ?мікрорайон ?(.+|$)': 'мкрн. $1$2',
       '(^|.+?) ?набережна ?(.+|$)': 'наб. $1$2',
+      '(^|.+?) ?площа ?(.+|$)': 'площа $1$2',
       '(^|.+?) ?провулок ?(.+|$)': 'пров. $1$2',
       '(^|.+?) ?проїзд ?(.+|$)': 'пр. $1$2',
       '(^|.+?) ?проспект ?(.+|$)': 'просп. $1$2',
@@ -720,6 +786,9 @@
     return street;
   }
 
+  /**
+   * Show vector from centdr of the selected POI to point by lon and lat
+   */
   function showVector() {
     let from = APIHelper.getSelectedVenues()[0].geometry.getCentroid();
     let to = new OL.Geometry.Point(this.dataset.lon, this.dataset.lat).transform('EPSG:4326', 'EPSG:900913');
@@ -753,6 +822,9 @@
     vectorLayer.setVisibility(true);
   }
 
+  /**
+   * Hide and clear all vectors
+   */
   function hideVector() {
     vectorLayer.removeAllFeatures();
     vectorLayer.setVisibility(false);
