@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         WME E50 Fetch POI Data
-// @version      0.0.14
+// @version      0.0.15
 // @description  Fetch information about the POI from external sources
 // @author       Anton Shevchuk
 // @license      MIT License
@@ -248,9 +248,9 @@
     }
     item(res) {
       let output = [];
-      let city = null;
-      let street = null;
-      let number = null;
+      let city = '';
+      let street = '';
+      let number = '';
       if (res.address.city) {
         city = res.address.city;
       }
@@ -296,9 +296,9 @@
 
     item(res) {
       let output = [];
-      let city = null;
-      let street = null;
-      let number = null;
+      let city = '';
+      let street = '';
+      let number = '';
       if (res.adm_div.length) {
         for (let i = 0; i < res.adm_div.length; i++) {
           if (res.adm_div[i]['type'] === 'city') {
@@ -358,9 +358,9 @@
       let center = res.Point.pos.split(' ');
       let lon = center[0];
       let lat = center[1];
-      let city = null;
-      let street = null;
-      let number = null;
+      let city = '';
+      let street = '';
+      let number = '';
       if (res.metaDataProperty.GeocoderMetaData.Address.Components) {
         for (let el in res.metaDataProperty.GeocoderMetaData.Address.Components) {
           if (res.metaDataProperty.GeocoderMetaData.Address.Components[el]['kind'] === 'locality') {
@@ -649,7 +649,7 @@
     let addressHN = poi.getAddress().attributes.houseNumber;
     if (number) {
       if (addressHN) {
-        if (addressHN !== number) {
+        if (addressHN !== number && addressHN !== number.replace('к', '-')) {
           if (window.confirm(I18n.t(NAME).questions.changeNumber + '\n«' + addressHN + '» ⟶ «' + number + '»?')) {
             newHN = number;
           }
@@ -658,7 +658,17 @@
         newHN = number;
       }
       if (newHN) {
-        W.model.actionManager.add(new WazeActionUpdateObject(poi, {houseNumber: newHN}));
+        let aliases = poi.attributes.aliases;
+        // Set "корпус" as alias for name
+        // Replace "к" with "-"
+        if ((new RegExp('[0-9]+.*к[0-9]+')).test(newHN)) {
+          let alias = newHN.replace('к', ' корпус ');
+          if (aliases.indexOf(alias) === -1) {
+            aliases.push(alias);
+          }
+          newHN = newHN.replace('к', '-');
+        }
+        W.model.actionManager.add(new WazeActionUpdateObject(poi, {houseNumber: newHN, aliases: aliases}));
       }
     }
 
@@ -763,16 +773,16 @@
   function normalizeStreet(street) {
     // let streets = W.model.streets.getObjectArray().filter(m => m.name !== null).map(m => m.name);
     let regs = {
-      '(^|.+?) ?бульвар ?(.+|$)': 'б-р $1$2',
+      '(^| )бульвар( |$)': '$1б-р$2',
+      '(^| )вїзд( |$)': '$1в\'їзд$2',
       '(^|.+?) ?вулиця ?(.+|$)': 'вул. $1$2',
-      '(^|.+?) ?дорога ?(.+|$)': 'дор. $1$2',
-      '(^|.+?) ?мікрорайон ?(.+|$)': 'мкрн. $1$2',
-      '(^|.+?) ?набережна ?(.+|$)': 'наб. $1$2',
-      '(^|.+?) ?площа ?(.+|$)': 'площа $1$2',
-      '(^|.+?) ?провулок ?(.+|$)': 'пров. $1$2',
-      '(^|.+?) ?проїзд ?(.+|$)': 'пр. $1$2',
-      '(^|.+?) ?проспект ?(.+|$)': 'просп. $1$2',
-      '(^|.+?) ?станція ?(.+|$)': 'ст. $1$2',
+      '(^| )дорога( |$)': '$1дор.$2',
+      '(^| )мікрорайон( |$)': '$1мкрн.$2',
+      '(^| )набережна( |$)': '$1наб.$2',
+      '(^| )провулок( |$)': '$1пров.$2',
+      '(^| )проїзд( |$)': '$1пр.$2',
+      '(^| )проспект( |$)': '$1просп.$2',
+      '(^| )станція( |$)': '$1ст.$2',
     };
 
     for (let key in regs) {
