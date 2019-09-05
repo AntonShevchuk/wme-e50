@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         WME E50 Fetch POI Data
-// @version      0.0.15
+// @version      0.0.16
 // @description  Fetch information about the POI from external sources
 // @author       Anton Shevchuk
 // @license      MIT License
@@ -136,6 +136,8 @@
       try {
         let result;
         let key = this.uid + ':' + lon + ',' + lat;
+        // TODO: create response object with normalized street and numbers
+        //       and cache response - for memory and CPU optimization
         if (E50Cache.has(key)) {
           result = E50Cache.get(key);
         } else {
@@ -143,7 +145,7 @@
           E50Cache.set(key, result);
         }
 
-        console.log(this.uid, result);
+        console.log('E50: ', this.uid, result);
         this.collection(result);
       } catch (e) {
         console.error(e);
@@ -214,7 +216,12 @@
           a.dataset.number = number;
           a.dataset.name = name ? name.trim() : '';
           a.innerHTML = [street, number, name].filter(x => !!x).join(', ');
+          a.title = [arguments[3], arguments[4], arguments[5]].filter(x => !!x).join(', ');
           a.className = NAME + '-link';
+
+      if (!city || !street || !number) {
+        a.className += ' noaddress';
+      }
       return a;
     }
   }
@@ -321,7 +328,7 @@
 
       let link = this.link(lon, lat, city, street, number, output.join(', '));
       if (res.purpose_name) {
-        link.title = res.purpose_name;
+        link.title += ', ' + res.purpose_name;
       }
       return link;
     }
@@ -374,15 +381,13 @@
           }
         }
       }
-      let link = this.link(
+      return this.link(
         lon,
         lat,
         city,
         street,
         number
       );
-      link.title = res.name;
-      return link;
     }
   }
 
@@ -496,7 +501,7 @@
       let number = /\d+/.test(address[1]) ? address[1].trim() : '';
 
 
-      let link = this.link(
+      return this.link(
         res.geometry.location.lng,
         res.geometry.location.lat,
         city,
@@ -504,10 +509,6 @@
         number,
         res.name
       );
-      if (!city || !street || !number) {
-        link.className += ' noaddress';
-      }
-      return link;
     }
   }
 
@@ -757,7 +758,7 @@
     number = number.replace('О', 'о');
 
     // \d( ?)к(орп)?\d
-    let korp = new RegExp(/(\d+)\s?к(?:орп)?\s?(\d+)/, 'gi');
+    let korp = new RegExp(/(.*)\s*к(?:орп)?\s*(\d+)/, 'gi');
     if (korp.test(number)) {
       number = number.replace(korp, '$1к$2');
     }
@@ -771,28 +772,46 @@
    * @return {string}
    */
   function normalizeStreet(street) {
-    // let streets = W.model.streets.getObjectArray().filter(m => m.name !== null).map(m => m.name);
+    // Normalize title
     let regs = {
       '(^| )бульвар( |$)': '$1б-р$2',
       '(^| )вїзд( |$)': '$1в\'їзд$2',
       '(^|.+?) ?вулиця ?(.+|$)': 'вул. $1$2',
+      '^(.+)[ ]+вул\.?$': 'вул. $1',
+      '^вул[ ]+(.+)$': 'вул. $1',
       '(^| )дорога( |$)': '$1дор.$2',
       '(^| )мікрорайон( |$)': '$1мкрн.$2',
       '(^| )набережна( |$)': '$1наб.$2',
       '(^| )провулок( |$)': '$1пров.$2',
       '(^| )проїзд( |$)': '$1пр.$2',
       '(^| )проспект( |$)': '$1просп.$2',
+      '(^| )район( |$)': '$1р-н$2',
       '(^| )станція( |$)': '$1ст.$2',
     };
 
     for (let key in regs) {
-      let re = new RegExp(key, 'i');
+      let re = new RegExp(key, 'gi');
       if (re.test(street)) {
         street = street.replace(re, regs[key]);
         break;
       }
     }
 
+    // Get street type and name and create RegExp
+    let streets = W.model.streets.getObjectArray().filter(m => m.name !== null && m.name !== '').map(m => m.name);
+    let re = new RegExp('(алея|б-р|в\'їзд|вул\\.|дор\\.|мкрн|наб\\.|площа|пров\\.|пр\\.|просп\\.|р-н|ст\\.|тракт|траса|тупик|узвіз|шосе)');
+    let typeMatch = street.match(re);
+    let type = typeMatch ? typeMatch[1] : 'вул\\.'; // Special for 2GIS
+    let name = street.replace(re, '').trim();
+    let reType = new RegExp('(' + type + ')', 'i');
+    let reName = new RegExp('(' + name.split(' ').join('|') + ')', 'i');
+
+    // Filter street
+    streets = streets.filter(str => reName.test(str) && reType.test(str));
+    if (streets.length === 1) {
+      street = streets[0];
+    }
+    console.log('E50: ', arguments[0], '=>', street);
     return street;
   }
 
