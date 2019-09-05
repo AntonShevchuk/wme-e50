@@ -813,6 +813,7 @@
     name = name.trim();
     name = name.replace('№', '');
     name = name.replace(/\.$/, '');
+    name = name.replace(/\s{2,}/, ' ');
     return name;
   }
 
@@ -879,19 +880,17 @@
    * @return {string}
    */
   function normalizeNumber(number) {
-    number = number.trim();
-    // і,з,о
+    // remove spaces
+    number = number.replace(' ', '');
+    // process і,з,о
     number = number.toUpperCase();
     number = number.replace('І', 'і');
     number = number.replace('З', 'з');
     number = number.replace('О', 'о');
-    // Д. N
-    number = number.replace(/^Д\. ?/, '');
-    // \d( ?)к(орп)?\d
-    let korp = new RegExp(/(.*)\s*к(?:орп)?\s*(\d+)/, 'gi');
-    if (korp.test(number)) {
-      number = number.replace(korp, '$1к$2');
-    }
+    // process д.
+    number = number.replace(/^Д\./, '');
+    // process корпус
+    number = number.replace(/(.*)к(?:орп)?(\d+)/gi, '$1к$2');
 
     return number;
   }
