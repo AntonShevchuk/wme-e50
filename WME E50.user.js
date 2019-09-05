@@ -807,6 +807,7 @@
   function normalizeName(name) {
     name = name.trim();
     name = name.replace('№', '');
+    name = name.replace(/\.$/, '');
     return name;
   }
 
@@ -880,7 +881,7 @@
     number = number.replace('З', 'з');
     number = number.replace('О', 'о');
     // Д. N
-    number = number.replace(/^д\. /i, '');
+    number = number.replace(/^Д\. ?/, '');
     // \d( ?)к(орп)?\d
     let korp = new RegExp(/(.*)\s*к(?:орп)?\s*(\d+)/, 'gi');
     if (korp.test(number)) {
