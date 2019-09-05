@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         WME E50 Fetch POI Data
-// @version      0.0.16
+// @version      0.0.17
 // @description  Fetch information about the POI from external sources
 // @author       Anton Shevchuk
 // @license      MIT License
@@ -528,7 +528,7 @@
 
     modal = helper.createModal(I18n.t(NAME).title);
 
-    tab = helper.createTab(I18n.t(NAME).title);
+    tab = helper.createTab(NAME + ': ' + I18n.t(NAME).title);
 
     // Setup providers settings
     let fieldset = helper.createFieldset(I18n.t(NAME).providers.settings);
