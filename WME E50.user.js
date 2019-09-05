@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         WME E50 Fetch POI Data
-// @version      0.0.17
+// @version      0.0.18
 // @description  Fetch information about the POI from external sources
 // @author       Anton Shevchuk
 // @license      MIT License
@@ -675,6 +675,9 @@
     let street = this.dataset['street'];
     let number = this.dataset['number'];
 
+    // TODO: make option
+    toClipboard([name, number, street, city].join(' '));
+
     // POI Name
     let newName;
     // If exists ask user to replace or not
@@ -768,6 +771,7 @@
     }
 
     // If no entry point we would create it
+    // TODO: make option
     if (poi.attributes.entryExitPoints.length === 0) {
       let navPoint = new NavigationPoint(poi.geometry.getCentroid());
       W.model.actionManager.add(new WazeActionUpdateObject(poi, {entryExitPoints: [navPoint]}));
@@ -889,6 +893,16 @@
     }
 
     return number;
+  }
+
+  function toClipboard(text) {
+    let input = document.querySelector('input.search-query');
+    let old = input.value;
+        input.value = text;
+        input.select();
+        input.setSelectionRange(0, 99999);
+    document.execCommand("copy");
+    input.value = old;
   }
 
   /**
