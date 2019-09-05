@@ -126,100 +126,155 @@
   class Provider {
     constructor(uid) {
       this.uid = uid;
+      this.response = [];
+      this.panel = document.createElement('div');
+      this.panel.id = 'E50-' + this.uid;
+      this.panel.className = 'e50';
     }
 
+    /**
+     * @param  {Number} lon
+     * @param  {Number} lat
+     * @return {Promise<void>}
+     */
     async request(lon, lat) {
       throw new Error('Abstract method');
     }
 
+    /**
+     * @param  {Number} lon
+     * @param  {Number} lat
+     * @return {Promise<void>}
+     */
     async search(lon, lat) {
       try {
-        let result;
         let key = this.uid + ':' + lon + ',' + lat;
-        // TODO: create response object with normalized street and numbers
-        //       and cache response - for memory and CPU optimization
         if (E50Cache.has(key)) {
-          result = E50Cache.get(key);
+          this.response = E50Cache.get(key);
         } else {
-          result = await this.request(lon, lat);
-          E50Cache.set(key, result);
+          this.response = await this.request(lon, lat);
+          E50Cache.set(key, this.response);
         }
-
-        console.log('E50: ', this.uid, result);
-        this.collection(result);
+        console.log('E50: ', this.uid, this.response);
+        this.render();
       } catch (e) {
         console.error(e);
       }
     }
 
-    panel(parent) {
-      let div = document.createElement('div');
-          div.id = 'E50-' + this.uid;
-          div.className = 'e50';
-      this.container = div;
-      parent.querySelector('.body').append(this.container);
-    }
-
-    collection(results) {
-      if (results.length === 0) {
-        return;
+    /**
+     * @param  {Array} res
+     * @return {Array}
+     */
+    collection(res) {
+      let result = [];
+      for (let i = 0; i < res.length; i++) {
+        result.push(this.item(res[i]));
       }
-      let fieldset = document.createElement('fieldset');
-      let list = document.createElement('ul');
-      list.style.display = results.length > 2 ? 'none' : 'block';
-
-      for (let i = 0; i < results.length; i++) {
-        let item = document.createElement('li');
-            item.append(this.item(results[i]));
-        list.append(item);
-      }
-
-      let legend = document.createElement('legend');
-      legend.innerHTML = this.uid + ' [' + results.length + ']';
-      legend.onclick = function () {
-        $(this).next().toggle();
-        return false;
-      };
-      fieldset.append(legend, list);
-      this.result(fieldset);
+      return result;
     }
 
     /**
-     * Should return {DocumentElement} link
-     * @param res
+     * Should return {Object}
+     * @param  {Object} res
+     * @return {Object}
      */
     item(res) {
       throw new Error('Abstract method');
     }
 
-    result(item) {
-      this.container.append(item);
-      return this;
-    }
-
-    link(lon, lat, city, street, number, name = null) {
+    /**
+     * @param  {Number} lon
+     * @param  {Number} lat
+     * @param  {String} city
+     * @param  {String} street
+     * @param  {String} number
+     * @param  {String} name
+     * @return {{number: *, city: *, street: *, name: *, raw: *, lon: *, title: *, lat: *}}
+     */
+    element(lon, lat, city, street, number, name = '') {
+      // Raw data from provider
+      let raw = [street, number, name].filter(x => !!x).join(', ');
       if (city) {
-        city = city.trim();
+        city = normalizeCity(city);
       }
       if (street) {
-        street = normalizeStreet(street.trim());
+        street = normalizeStreet(street);
       }
       if (number) {
-        number = normalizeNumber(number.trim());
+        number = normalizeNumber(number);
       }
+      if (name) {
+        name = normalizeName(name);
+      }
+      let title = [street, number, name].filter(x => !!x).join(', ');
+      let item = {
+        lat: lat,
+        lon: lon,
+        city: city,
+        street: street,
+        number: number,
+        name: name,
+        title: title,
+        raw: raw,
+      };
+      return item;
+    }
+
+    /**
+     * Inject panel to target HTML element
+     * @param dom
+     */
+    container(dom) {
+      dom.querySelector('.body').append(this.panel);
+    }
+
+    /**
+     * Render result to target element
+     */
+    render() {
+      if (this.response.length === 0) {
+        return;
+      }
+
+      let fieldset = document.createElement('fieldset');
+      let list = document.createElement('ul');
+          list.style.display = this.response.length > 2 ? 'none' : 'block';
+
+      for (let i = 0; i < this.response.length; i++) {
+        let item = document.createElement('li');
+        item.append(this.link(this.response[i]));
+        list.append(item);
+      }
+
+      let legend = document.createElement('legend');
+          legend.innerHTML = this.uid + ' [' + this.response.length + ']';
+          legend.onclick = function () {
+            $(this).next().toggle();
+            return false;
+          };
+      fieldset.append(legend, list);
+      this.panel.append(fieldset);
+    }
+
+    /**
+     * Build link by {Object}
+     * @param  {Object} item
+     * @return {HTMLAnchorElement}
+     */
+    link(item) {
       let a = document.createElement('a');
           a.href = '#';
-          a.dataset.lat = lat;
-          a.dataset.lon = lon;
-          a.dataset.city = city;
-          a.dataset.street = street;
-          a.dataset.number = number;
-          a.dataset.name = name ? name.trim() : '';
-          a.innerHTML = [street, number, name].filter(x => !!x).join(', ');
-          a.title = [arguments[3], arguments[4], arguments[5]].filter(x => !!x).join(', ');
+          a.dataset.lat = item.lat;
+          a.dataset.lon = item.lon;
+          a.dataset.city = item.city;
+          a.dataset.street = item.street;
+          a.dataset.number = item.number;
+          a.dataset.name = item.name;
+          a.innerHTML = item.title;
+          a.title = item.raw;
           a.className = NAME + '-link';
-
-      if (!city || !street || !number) {
+      if (!item.city || !item.street || !item.number) {
         a.className += ' noaddress';
       }
       return a;
@@ -250,7 +305,7 @@
       if (!response.address) {
         return [];
       } else {
-        return [response];
+        return [this.item(response)];
       }
     }
     item(res) {
@@ -269,7 +324,7 @@
       } else {
         output.push(res.display_name.split(', ', 1));
       }
-      return this.link(res.lon, res.lat, city, street, number, output.join(', '));
+      return this.element(res.lon, res.lat, city, street, number, output.join(', '));
     }
   }
 
@@ -298,7 +353,7 @@
       if (!response.result || !response.result.items.length) {
         return [];
       }
-      return response.result.items;
+      return this.collection(response.result.items);
     }
 
     item(res) {
@@ -326,11 +381,11 @@
       let lon = center[0];
       let lat = center[1];
 
-      let link = this.link(lon, lat, city, street, number, output.join(', '));
+      let element = this.element(lon, lat, city, street, number, output.join(', '));
       if (res.purpose_name) {
-        link.title += ', ' + res.purpose_name;
+        element.raw += ', ' + res.purpose_name;
       }
-      return link;
+      return element;
     }
   }
 
@@ -357,7 +412,8 @@
       if (!response.response || !response.response.GeoObjectCollection.featureMember.length) {
         return [];
       }
-      return response.response.GeoObjectCollection.featureMember;
+
+      return this.collection(response.response.GeoObjectCollection.featureMember);
     }
 
     item(res) {
@@ -381,7 +437,7 @@
           }
         }
       }
-      return this.link(
+      return this.element(
         lon,
         lat,
         city,
@@ -415,12 +471,11 @@
       if (!response.Response || !response.Response.View || !response.Response.View || !response.Response.View[0] || !response.Response.View[0].Result) {
         return [];
       }
-      let results = response.Response.View[0].Result;
-      return results.filter(x => x.MatchLevel === 'houseNumber');
+      return this.collection(response.Response.View[0].Result.filter(x => x.MatchLevel === 'houseNumber'));
     }
 
     item(res) {
-      return this.link(
+      return this.element(
         res.Location.DisplayPosition.Longitude,
         res.Location.DisplayPosition.Latitude,
         res.Location.Address.City,
@@ -453,11 +508,11 @@
       if (!response || !response.resourceSets || !response.resourceSets[0]) {
         return [];
       }
-      return response.resourceSets[0].resources.filter(el => el.address.addressLine.indexOf(',') > 0);
+      return this.collection(response.resourceSets[0].resources.filter(el => el.address.addressLine.indexOf(',') > 0));
     }
     item(res) {
       let address = res.address.addressLine.split(',');
-      return this.link(
+      return this.element(
         res.point.coordinates[1],
         res.point.coordinates[0],
         res.address.locality,
@@ -491,7 +546,7 @@
       if (!response.results || !response.results.length) {
         return [];
       }
-      return response.results;
+      return this.collection(response.results);
     }
 
     item(res) {
@@ -501,7 +556,7 @@
       let number = /\d+/.test(address[1]) ? address[1].trim() : '';
 
 
-      return this.link(
+      return this.element(
         res.geometry.location.lng,
         res.geometry.location.lat,
         city,
@@ -570,37 +625,37 @@
 
     if (E50Settings.get('providers').osm) {
       let Osm = new OsmProvider('OSM');
-      Osm.panel(modalHTML);
+      Osm.container(modalHTML);
       Osm.search(selected.x, selected.y);
     }
 
     if (E50Settings.get('providers').gis) {
       let Gis = new GisProvider('2Gis');
-      Gis.panel(modalHTML);
+      Gis.container(modalHTML);
       Gis.search(selected.x, selected.y);
     }
 
     if (E50Settings.get('providers').yandex) {
       let Yandex = new YMProvider('Yandex');
-      Yandex.panel(modalHTML);
+      Yandex.container(modalHTML);
       Yandex.search(selected.x, selected.y);
     }
 
     if (E50Settings.get('providers').here) {
       let Here = new HereProvider('Here');
-      Here.panel(modalHTML);
+      Here.container(modalHTML);
       Here.search(selected.x, selected.y);
     }
 
     if (E50Settings.get('providers').bing) {
       let Bing = new BingProvider('Bing');
-      Bing.panel(modalHTML);
+      Bing.container(modalHTML);
       Bing.search(selected.x, selected.y);
     }
 
     if (E50Settings.get('providers').google) {
       let Google = new GPProvider('Google');
-      Google.panel(modalHTML);
+      Google.container(modalHTML);
       Google.search(selected.x, selected.y);
     }
 
@@ -746,32 +801,30 @@
   }
 
   /**
-   * Normalize house number
-   * @param  {string} number
+   * @param  {string} name
    * @return {string}
    */
-  function normalizeNumber(number) {
-    // і,з,о
-    number = number.toUpperCase();
-    number = number.replace('І', 'і');
-    number = number.replace('З', 'з');
-    number = number.replace('О', 'о');
-
-    // \d( ?)к(орп)?\d
-    let korp = new RegExp(/(.*)\s*к(?:орп)?\s*(\d+)/, 'gi');
-    if (korp.test(number)) {
-      number = number.replace(korp, '$1к$2');
-    }
-
-    return number;
+  function normalizeName(name) {
+    name = name.trim();
+    name = name.replace('№', '');
+    return name;
   }
 
   /**
-   * Normalize street name
+   * @param  {string} city
+   * @return {string}
+   */
+  function normalizeCity(city) {
+    city = city.trim();
+    return city;
+  }
+
+  /**
    * @param  {string} street
    * @return {string}
    */
   function normalizeStreet(street) {
+    street = street.trim();
     // Normalize title
     let regs = {
       '(^| )бульвар( |$)': '$1б-р$2',
@@ -813,6 +866,28 @@
     }
     console.log('E50: ', arguments[0], '=>', street);
     return street;
+  }
+
+  /**
+   * @param  {string} number
+   * @return {string}
+   */
+  function normalizeNumber(number) {
+    number = number.trim();
+    // і,з,о
+    number = number.toUpperCase();
+    number = number.replace('І', 'і');
+    number = number.replace('З', 'з');
+    number = number.replace('О', 'о');
+    // Д. N
+    number = number.replace(/^д\. /i, '');
+    // \d( ?)к(орп)?\d
+    let korp = new RegExp(/(.*)\s*к(?:орп)?\s*(\d+)/, 'gi');
+    if (korp.test(number)) {
+      number = number.replace(korp, '$1к$2');
+    }
+
+    return number;
   }
 
   /**
