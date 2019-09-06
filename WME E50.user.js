@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         WME E50 Fetch POI Data
-// @version      0.0.20
+// @version      0.0.21
 // @description  Fetch information about the POI from external sources
 // @author       Anton Shevchuk
 // @license      MIT License
@@ -34,11 +34,15 @@
   const TRANSLATION = {
     'en': {
       title: 'Information',
+      description: {
+        copyData: 'Copy name and address of the selected POI to clipboard',
+      },
       options: {
         title: 'Options',
         modal: 'Use modal window',
         entryPoint: 'Create Entry Point if not exists',
         copyData: 'Copy POI data to clipboard on click',
+        lock: 'Lock POI to 2 level',
       },
       providers: {
         title: 'Providers',
@@ -58,11 +62,15 @@
     },
     'uk': {
       title: 'Інформація',
+      description: {
+        copyData: 'Копіювати до буферу обміну назву та адресу обраного POI',
+      },
       options: {
         title: 'Налаштування',
         modal: 'Використовувати окрему панель',
         entryPoint: 'Створювати точку в\'їзду, якщо відсутня',
         copyData: 'При виборі, копіювати до буферу обміну назву та адресу POI',
+        lock: 'Блокувати POI 2-м рівнем',
       },
       providers: {
         title: 'Джерела',
@@ -82,11 +90,15 @@
     },
     'ru': {
       title: 'Информация',
+      description: {
+        copyData: 'Копировать в буфер обмена название и адрес выбранного POI',
+      },
       options: {
         title: 'Настройки',
         modal: 'Использовать отдельную панель',
         entryPoint: 'Создавать точку въезда если отсутствует',
         copyData: 'При виборе, копировать в буфер обмена название и адрес POI',
+        lock: 'Блокировать POI 2-м уровнем',
       },
       providers: {
         title: 'Источники',
@@ -111,6 +123,7 @@
       modal: true,
       entryPoint: true,
       copyData: true,
+      lock: true,
     },
     providers: {
       osm: true,
@@ -180,7 +193,7 @@
           this.response = await this.request(lon, lat);
           E50Cache.set(key, this.response);
         }
-        console.log('E50: ', this.uid, this.response);
+        console.log('E50:', this.uid, this.response);
         this.render();
       } catch (e) {
         console.error(e);
@@ -633,6 +646,34 @@
     tab.addElement(fsProviders);
     tab.inject();
 
+    // Shortcut for copy POI data to clipboard
+    new WazeWrap.Interface.Shortcut(
+      NAME + '-clipboard',
+      I18n.t(NAME).description.copyData,
+      NAME,
+      NAME,
+      'C+B',
+      function () {
+        if (!W.selectionManager.hasSelectedFeatures()
+          || W.selectionManager.getSelectedFeatures()[0].model.type !== 'venue') {
+          return;
+        }
+        let poi = W.selectionManager.getSelectedFeatures()[0].model;
+        let data = [
+          poi.attributes.name,
+          poi.getAddress().attributes.houseNumber,
+          poi.getAddress().getStreet().name,
+          poi.getAddress().getCity().getName(),
+        ];
+        data = data.filter(x => !!x);
+        data = data.filter((v, i, a) => a.indexOf(v) === i);
+
+        toClipboard(data.join(' '));
+      },
+      null
+    ).add();
+
+    // Create layer for vectors
     vectorLayer = new OL.Layer.Vector("E50VectorLayer", {
       displayInLayerSwitcher: false,
       uniqueName: "__E50VectorLayer"
@@ -717,13 +758,13 @@
     event.preventDefault();
 
     let poi = APIHelper.getSelectedVenues()[0];
-    let name = this.dataset['name'];
-    let city = this.dataset['city'];
-    let street = this.dataset['street'];
-    let number = this.dataset['number'];
+    let name = this.dataset.name;
+    let city = this.dataset.city;
+    let street = this.dataset.street;
+    let number = this.dataset.number;
 
-    if (E50Settings.get('options', 'clipboard')) {
-      toClipboard([name, number, street, city].join(' '));
+    if (E50Settings.get('options', 'copyData')) {
+      toClipboard([name, number, street, city].filter(x => !!x).join(' '));
     }
 
     // POI Name
@@ -824,6 +865,11 @@
       W.model.actionManager.add(new WazeActionUpdateObject(poi, {entryExitPoints: [navPoint]}));
     }
 
+    // Lock to level 2
+    if (E50Settings.get('options', 'lock') && poi.attributes.lockRank < 1 && W.loginManager.user.getRank() > 0) {
+      W.model.actionManager.add(new WazeActionUpdateObject(poi, {lockRank: 1}));
+    }
+
     if (newName || newHN || newStreet || newCity) {
       W.selectionManager.setSelectedModels([poi]);
     }
@@ -917,7 +963,7 @@
     if (streets.length === 1) {
       street = streets[0];
     }
-    console.log('E50: ', arguments[0], '=>', street);
+    console.log('E50:', arguments[0], '=>', street);
     return street;
   }
 
@@ -942,6 +988,10 @@
   }
 
   function toClipboard(text) {
+    // normalize
+    text = text.replace('\'', '');
+    text = text.replace('"', '');
+    // use search input for copy text to clipboard
     let input = document.querySelector('input.search-query');
     let old = input.value;
         input.value = text;
@@ -949,6 +999,7 @@
         input.setSelectionRange(0, 99999);
     document.execCommand("copy");
     input.value = old;
+    console.log('E50: copied «' + text + '»');
   }
 
   /**
