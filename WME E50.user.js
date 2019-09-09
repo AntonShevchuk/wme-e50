@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         WME E50 Fetch POI Data
-// @version      0.0.21
+// @version      0.0.22
 // @description  Fetch information about the POI from external sources
 // @author       Anton Shevchuk
 // @license      MIT License
@@ -277,7 +277,7 @@
 
       let fieldset = document.createElement('fieldset');
       let list = document.createElement('ul');
-          list.style.display = this.response.length > 2 ? 'none' : 'block';
+      list.style.display = this.response.length > 2 ? 'none' : 'block';
 
       for (let i = 0; i < this.response.length; i++) {
         let item = document.createElement('li');
@@ -286,11 +286,11 @@
       }
 
       let legend = document.createElement('legend');
-          legend.innerHTML = this.uid + ' [' + this.response.length + ']';
-          legend.onclick = function () {
-            $(this).next().toggle();
-            return false;
-          };
+      legend.innerHTML = this.uid + ' [' + this.response.length + ']';
+      legend.onclick = function () {
+        $(this).next().toggle();
+        return false;
+      };
       fieldset.append(legend, list);
       this.panel.append(fieldset);
     }
@@ -302,16 +302,16 @@
      */
     link(item) {
       let a = document.createElement('a');
-          a.href = '#';
-          a.dataset.lat = item.lat;
-          a.dataset.lon = item.lon;
-          a.dataset.city = item.city;
-          a.dataset.street = item.street;
-          a.dataset.number = item.number;
-          a.dataset.name = item.name;
-          a.innerHTML = item.title;
-          a.title = item.raw;
-          a.className = NAME + '-link';
+      a.href = '#';
+      a.dataset.lat = item.lat;
+      a.dataset.lon = item.lon;
+      a.dataset.city = item.city;
+      a.dataset.street = item.street;
+      a.dataset.number = item.number;
+      a.dataset.name = item.name;
+      a.innerHTML = item.title;
+      a.title = item.raw;
+      a.className = NAME + '-link';
       if (!item.city || !item.street || !item.number) {
         a.className += ' noaddress';
       }
@@ -346,6 +346,7 @@
         return [this.item(response)];
       }
     }
+
     item(res) {
       let output = [];
       let city = '';
@@ -546,8 +547,9 @@
       if (!response || !response.resourceSets || !response.resourceSets[0]) {
         return [];
       }
-      return this.collection(response.resourceSets[0].resources.filter(el => el.address.addressLine.indexOf(',') > 0));
+      return this.collection(response.resourceSets[0].resources.filter(el => el.address.addressLine && el.address.addressLine.indexOf(',') > 0));
     }
+
     item(res) {
       let address = res.address.addressLine.split(',');
       return this.element(
@@ -593,7 +595,6 @@
       let street = address[0] && address[0].length > 8 ? address[0].trim() : '';
       let number = /\d+/.test(address[1]) ? address[1].trim() : '';
 
-
       return this.element(
         res.geometry.location.lng,
         res.geometry.location.lat,
@@ -629,7 +630,7 @@
     let fsOptions = helper.createFieldset(I18n.t(NAME).options.title);
     let options = E50Settings.get('options');
     for (let item in options) {
-      fsOptions.addCheckbox(item, I18n.t(NAME).options[item], I18n.t(NAME).options[item], function(event) {
+      fsOptions.addCheckbox(item, I18n.t(NAME).options[item], I18n.t(NAME).options[item], function (event) {
         E50Settings.set(['options', item], event.target.checked);
       }, E50Settings.get('options', item));
     }
@@ -639,7 +640,7 @@
     let fsProviders = helper.createFieldset(I18n.t(NAME).providers.title);
     let providers = E50Settings.get('providers');
     for (let item in providers) {
-      fsProviders.addCheckbox(item, I18n.t(NAME).providers[item], I18n.t(NAME).providers[item], function(event) {
+      fsProviders.addCheckbox(item, I18n.t(NAME).providers[item], I18n.t(NAME).providers[item], function (event) {
         E50Settings.set(['providers', item], event.target.checked);
       }, E50Settings.get('providers', item));
     }
@@ -690,6 +691,19 @@
   }
 
   /**
+   *
+   * @return {null|Object}
+   */
+  function getSelectedPOI() {
+    let elements = W.selectionManager.getSelectedFeatures().map((x) => x.model).filter((el) => el.type === 'venue');
+    if (elements.length === 0) {
+      return null;
+    } else {
+      return elements[0];
+    }
+  }
+
+  /**
    * Create and fill modal panel
    * @param event
    * @param element
@@ -704,7 +718,13 @@
       container = parent.querySelector('.controls');
     }
 
-    let selected = APIHelper.getSelectedVenues()[0].geometry.getCentroid().clone();
+    let poi = getSelectedPOI();
+
+    if (!poi) {
+      return;
+    }
+
+    let selected = poi.geometry.getCentroid().clone();
     selected.transform('EPSG:900913', 'EPSG:4326');
 
     if (E50Settings.get('providers').osm) {
@@ -756,8 +776,14 @@
    */
   function applyData(event) {
     event.preventDefault();
+    let poi = getSelectedPOI();
 
-    let poi = APIHelper.getSelectedVenues()[0];
+    if (!poi.isGeometryEditable()) {
+      return;
+    }
+
+    let lat = this.dataset.lat;
+    let lon = this.dataset.lon;
     let name = this.dataset.name;
     let city = this.dataset.city;
     let street = this.dataset.street;
@@ -769,7 +795,7 @@
 
     // POI Name
     let newName;
-    // If exists ask user to replace or not
+    // If exists name ask user to replace it or not
     // If not exists - use name or house number as name
     if (poi.attributes.name) {
       if (name && name !== poi.attributes.name) {
@@ -781,12 +807,10 @@
           newName = number;
         }
       }
-    } else {
-      if (name) {
-        newName = name;
-      } else if (number) {
-        newName = number;
-      }
+    } else if (name) {
+      newName = name;
+    } else if (number) {
+      newName = number;
     }
     if (newName) {
       W.model.actionManager.add(new WazeActionUpdateObject(poi, {name: newName}));
@@ -797,10 +821,11 @@
     let addressHN = poi.getAddress().attributes.houseNumber;
     if (number) {
       if (addressHN) {
-        if (addressHN !== number && addressHN !== number.replace('к', '-')) {
-          if (window.confirm(I18n.t(NAME).questions.changeNumber + '\n«' + addressHN + '» ⟶ «' + number + '»?')) {
-            newHN = number;
-          }
+        if (addressHN !== number
+          && addressHN !== number.replace('к', '-')
+          && addressHN !== number.replace('/', '-')
+          && window.confirm(I18n.t(NAME).questions.changeNumber + '\n«' + addressHN + '» ⟶ «' + number + '»?')) {
+          newHN = number;
         }
       } else {
         newHN = number;
@@ -809,12 +834,16 @@
         let aliases = poi.attributes.aliases;
         // Set "корпус" as alias for name
         // Replace "к" with "-"
-        if ((new RegExp('[0-9]+.*к[0-9]+')).test(newHN)) {
+        if ((new RegExp('[0-9]+[а-яі]?к[0-9]+', 'i')).test(newHN)) {
           let alias = newHN.replace('к', ' корпус ');
           if (aliases.indexOf(alias) === -1) {
             aliases.push(alias);
           }
           newHN = newHN.replace('к', '-');
+        }
+        // Replace "/" with "-" for house with letter
+        if ((new RegExp('[0-9]+[а-яі]\\/[0-9]+', 'i')).test(newHN)) {
+          newHN = newHN.replace('/', '-');
         }
         W.model.actionManager.add(new WazeActionUpdateObject(poi, {houseNumber: newHN, aliases: aliases}));
       }
@@ -825,10 +854,9 @@
     let addressStreet = poi.getAddress().getStreet().name;
     if (street) {
       if (addressStreet) {
-        if (addressStreet !== street) {
-          if (window.confirm(I18n.t(NAME).questions.changeStreet + '\n«' + addressStreet + '» ⟶ «' + street + '»?')) {
-            newStreet = street;
-          }
+        if (addressStreet !== street
+          && window.confirm(I18n.t(NAME).questions.changeStreet + '\n«' + addressStreet + '» ⟶ «' + street + '»?')) {
+          newStreet = street;
         }
       } else {
         newStreet = street;
@@ -840,10 +868,9 @@
     let addressCity = poi.getAddress().getCity().getName();
     if (city) {
       if (addressCity) {
-        if (!(new RegExp(city, 'i')).test(addressCity)) {
-          if (window.confirm(I18n.t(NAME).questions.changeCity + '\n«' + addressCity + '» ⟶ «' + city + '»?')) {
-            newCity = city;
-          }
+        if (addressCity !== city
+          && window.confirm(I18n.t(NAME).questions.changeCity + '\n«' + addressCity + '» ⟶ «' + city + '»?')) {
+          newCity = city;
         }
       } else {
         newCity = city;
@@ -914,7 +941,22 @@
    * @return {string}
    */
   function normalizeCity(city) {
-    city = city.trim();
+    // Clear accents/diacritics
+    city = city.trim().normalize('NFD').replace(/[\u0300-\u0305\u0307-\u036f]/g, '');
+
+    let cities = W.model.cities.getObjectArray().filter(m => m.attributes.name !== null && m.attributes.name !== '').map(m => m.attributes.name);
+
+    if (city === '' && cities.length === 0) {
+      city = '';
+    } else if (city === '' && cities.length === 1) {
+      city = cities[0];
+    } else {
+      let best = findBestMatch(city, cities);
+      if (best) {
+        city = best;
+      }
+    }
+    console.log('E50:', arguments[0], '=>', city);
     return city;
   }
 
@@ -923,11 +965,13 @@
    * @return {string}
    */
   function normalizeStreet(street) {
-    street = street.trim();
+    // Clear accents/diacritics
+    street = street.trim().normalize('NFD').replace(/[\u0300-\u0305\u0307-\u036f]/g, '');
     // Normalize title
     let regs = {
       '(^| )бульвар( |$)': '$1б-р$2',
       '(^| )вїзд( |$)': '$1в\'їзд$2',
+      '(^| )в\'ізд( |$)': '$1в\'їзд$2',
       '(^|.+?) ?вулиця ?(.+|$)': 'вул. $1$2',
       '^(.+)[ ]+вул\.?$': 'вул. $1',
       '^вул[ ]+(.+)$': 'вул. $1',
@@ -949,19 +993,22 @@
       }
     }
 
-    // Get street type and name and create RegExp
+    // Get all streets
     let streets = W.model.streets.getObjectArray().filter(m => m.name !== null && m.name !== '').map(m => m.name);
-    let re = new RegExp('(алея|б-р|в\'їзд|вул\\.|дор\\.|мкрн|наб\\.|площа|пров\\.|пр\\.|просп\\.|р-н|ст\\.|тракт|траса|тупик|узвіз|шосе)');
-    let typeMatch = street.match(re);
-    let type = typeMatch ? typeMatch[1] : 'вул\\.'; // Special for 2GIS
-    let name = street.replace(re, '').trim();
-    let reType = new RegExp('(' + type + ')', 'i');
-    let reName = new RegExp('(' + name.split(' ').join('|') + ')', 'i');
 
-    // Filter street
-    streets = streets.filter(str => reName.test(str) && reType.test(str));
-    if (streets.length === 1) {
-      street = streets[0];
+    // Get type and create RegExp for filter streets
+    let reTypes = new RegExp('(алея|б-р|в\'їзд|вул\\.|дор\\.|мкрн|наб\\.|площа|пров\\.|пр\\.|просп\\.|р-н|ст\\.|тракт|траса|тупик|узвіз|шосе)', 'i');
+    let typeMatch = street.match(reTypes);
+    let type = typeMatch ? typeMatch[1] : 'вул\\.'; // Special for 2GIS
+    let reType = new RegExp('(' + type + ')', 'i');
+    // Filter street type
+    // console.log(streets, street, typeMatch);
+    streets = streets.filter(str => reType.test(str));
+    // console.log(streets);
+    // Matching
+    let best = findBestMatch(street, streets);
+    if (best) {
+      street = best;
     }
     console.log('E50:', arguments[0], '=>', street);
     return street;
@@ -973,15 +1020,30 @@
    */
   function normalizeNumber(number) {
     // remove spaces
-    number = number.replace(' ', '');
-    // process і,з,о
+    number = number.trim().replace(' ', '');
     number = number.toUpperCase();
+    // process Latin to Cyrillic
+    number = number.replace('A', 'А');
+    number = number.replace('B', 'В');
+    number = number.replace('E', 'Е');
+    number = number.replace('I', 'І');
+    number = number.replace('K', 'К');
+    number = number.replace('M', 'М');
+    number = number.replace('H', 'Н');
+    number = number.replace('О', 'О');
+    number = number.replace('P', 'Р');
+    number = number.replace('C', 'С');
+    number = number.replace('T', 'Т');
+    number = number.replace('Y', 'У');
+    // process і,з,о
     number = number.replace('І', 'і');
     number = number.replace('З', 'з');
     number = number.replace('О', 'о');
-    // process д.
+    // process "д."
     number = number.replace(/^Д\./, '');
-    // process корпус
+    // process "буд."
+    number = number.replace(/^БУД\./, '');
+    // process "корпус"
     number = number.replace(/(.*)к(?:орп)?(\d+)/gi, '$1к$2');
 
     return number;
@@ -994,9 +1056,9 @@
     // use search input for copy text to clipboard
     let input = document.querySelector('input.search-query');
     let old = input.value;
-        input.value = text;
-        input.select();
-        input.setSelectionRange(0, 99999);
+    input.value = text;
+    input.select();
+    input.setSelectionRange(0, 99999);
     document.execCommand("copy");
     input.value = old;
     console.log('E50: copied «' + text + '»');
@@ -1006,7 +1068,11 @@
    * Show vector from centdr of the selected POI to point by lon and lat
    */
   function showVector() {
-    let from = APIHelper.getSelectedVenues()[0].geometry.getCentroid();
+    let poi = getSelectedPOI();
+    if (!poi) {
+      return;
+    }
+    let from = poi.geometry.getCentroid();
     let to = new OL.Geometry.Point(this.dataset.lon, this.dataset.lat).transform('EPSG:4326', 'EPSG:900913');
     let distance = Math.round(WazeWrap.Geometry.calculateDistance([to, from]));
 
@@ -1044,5 +1110,67 @@
   function hideVector() {
     vectorLayer.removeAllFeatures();
     vectorLayer.setVisibility(false);
+  }
+
+  /**
+   * @link   https://github.com/aceakash/string-similarity
+   * @param  {string} first
+   * @param  {string} second
+   * @return {number}
+   */
+  function compareTwoStrings(first, second) {
+    first = first.replace(/\s+/g, '');
+    second = second.replace(/\s+/g, '');
+
+    if (!first.length && !second.length) return 1;           // if both are empty strings
+    if (!first.length || !second.length) return 0;           // if only one is empty string
+    if (first === second) return 1;                          // identical
+    if (first.length === 1 && second.length === 1) return 0; // both are 1-letter strings
+    if (first.length < 2 || second.length < 2) return 0;     // if either is a 1-letter string
+
+    let firstBigrams = new Map();
+    for (let i = 0; i < first.length - 1; i++) {
+      const bigram = first.substring(i, i + 2);
+      const count = firstBigrams.has(bigram)
+        ? firstBigrams.get(bigram) + 1
+        : 1;
+
+      firstBigrams.set(bigram, count);
+    }
+
+    let intersectionSize = 0;
+    for (let i = 0; i < second.length - 1; i++) {
+      const bigram = second.substring(i, i + 2);
+      const count = firstBigrams.has(bigram)
+        ? firstBigrams.get(bigram)
+        : 0;
+
+      if (count > 0) {
+        firstBigrams.set(bigram, count - 1);
+        intersectionSize++;
+      }
+    }
+
+    return (2.0 * intersectionSize) / (first.length + second.length - 2);
+  }
+
+  /**
+   * @param  {string} mainString
+   * @param  {string[]} targetStrings
+   * @return {string}
+   */
+  function findBestMatch(mainString, targetStrings) {
+    let bestMatch = '';
+    let bestMatchRating = 0;
+
+    for (let i = 0; i < targetStrings.length; i++) {
+      let rating = compareTwoStrings(mainString, targetStrings[i]);
+      if (rating > bestMatchRating) {
+        bestMatch = targetStrings[i];
+        bestMatchRating = rating;
+      }
+    }
+    console.log('E50:', mainString, ' <=> ', bestMatch, ' = ', bestMatchRating);
+    return bestMatch;
   }
 })();
