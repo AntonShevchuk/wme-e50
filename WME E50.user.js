@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         WME E50 Fetch POI Data
-// @version      0.0.23
+// @version      0.0.24
 // @description  Fetch information about the POI from external sources
 // @author       Anton Shevchuk
 // @license      MIT License
@@ -583,9 +583,11 @@
 
     item(res) {
       let address = res.vicinity.split(',');
-      let city = address[2] ? address[2].trim() : '';
-      let street = address[0] && address[0].length > 8 ? address[0].trim() : '';
-      let number = /\d+/.test(address[1]) ? address[1].trim() : '';
+      address = address.map(str => str.trim());
+
+      let street = address[0] && address[0].length > 8 ? address[0] : '';
+      let number = address[1] && address[1].length < 13 && /\d+/.test(address[1]) ? address[1] : '';
+      let city = address[2] ? address[2] : '';
 
       return this.element(
         res.geometry.location.lng,
@@ -647,8 +649,8 @@
       NAME,
       'C+B',
       function () {
-        if (!W.selectionManager.hasSelectedFeatures()
-          || W.selectionManager.getSelectedFeatures()[0].model.type !== 'venue') {
+        if (!W.selectionManager.hasSelectedFeatures() ||
+          W.selectionManager.getSelectedFeatures()[0].model.type !== 'venue') {
           return;
         }
         let poi = W.selectionManager.getSelectedFeatures()[0].model;
@@ -921,7 +923,7 @@
    * @returns {string}
    */
   function normalizeString(str) {
-    // Clear space symbols
+    // Clear space symbols and double quotes
     str = str.trim()
       .replace(/"/g, '')
       .replace(/\s{2,}/g, ' ')
@@ -1051,11 +1053,15 @@
     number = number.replace('З', 'з');
     number = number.replace('О', 'о');
     // process "д."
-    number = number.replace(/^Д\./, '');
+    number = number.replace(/^Д\./i, '');
+    // process "дом"
+    number = number.replace(/^ДОМ ?/i, '');
     // process "буд."
-    number = number.replace(/^БУД\./, '');
-    // process "корпус"
+    number = number.replace(/^БУД\./i, '');
+    // process "корпус" to "к"
     number = number.replace(/(.*)к(?:орп)?(\d+)/gi, '$1к$2');
+    // process "N-M" to "NM"
+    number = number.replace(/(.*)-([а-яі])/gi, '$1$2');
 
     return number;
   }
