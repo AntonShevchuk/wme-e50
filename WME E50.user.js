@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         WME E50 Fetch POI Data
-// @version      0.0.24
+// @version      0.0.25
 // @description  Fetch information about the POI from external sources
 // @author       Anton Shevchuk
 // @license      MIT License
@@ -929,7 +929,7 @@
       .replace(/\s{2,}/g, ' ')
     ;
     // Clear accents/diacritics, but "\u0306" needed for "й"
-    str = str.normalize('NFD').replace(/[\u0300-\u0305\u0309-\u036f]/g, '');
+    // str = str.normalize('NFD').replace(/[\u0300-\u0305\u0309-\u036f]/g, '');
     return str;
   }
 
@@ -978,6 +978,9 @@
       return '';
     }
 
+    // Prepare street name
+    street = street.replace(/[’']/, '\'');
+
     // Normalize title
     let regs = {
       '(^| )бульвар( |$)': '$1б-р$2',
@@ -990,6 +993,7 @@
       '(^| )мікрорайон( |$)': '$1мкрн.$2',
       '(^| )набережна( |$)': '$1наб.$2',
       '(^| )площадь( |$)': '$1площа$2',
+      '(^| )провулок провулок( |$)': '$1пров.$2',
       '(^| )провулок( |$)': '$1пров.$2',
       '(^| )проїзд( |$)': '$1пр.$2',
       '(^| )проспект( |$)': '$1просп.$2',
@@ -1053,11 +1057,11 @@
     number = number.replace('З', 'з');
     number = number.replace('О', 'о');
     // process "д."
-    number = number.replace(/^Д\./i, '');
+    number = number.replace(/^д\./i, '');
     // process "дом"
-    number = number.replace(/^ДОМ ?/i, '');
+    number = number.replace(/^дом ?/i, '');
     // process "буд."
-    number = number.replace(/^БУД\./i, '');
+    number = number.replace(/^буд\./i, '');
     // process "корпус" to "к"
     number = number.replace(/(.*)к(?:орп)?(\d+)/gi, '$1к$2');
     // process "N-M" to "NM"
@@ -1186,7 +1190,7 @@
       }
     }
     if (bestMatch === '' || bestMatchRating < 0.33) {
-      console.log('E50:', mainString, 'not matched');
+      console.log('E50:', mainString, 'not matched', targetStrings);
       return -1;
     } else {
       console.log('E50:', mainString, '<=>', bestMatch, '=', bestMatchRating);
