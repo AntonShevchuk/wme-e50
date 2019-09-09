@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         WME E50 Fetch POI Data
-// @version      0.0.22
+// @version      0.0.23
 // @description  Fetch information about the POI from external sources
 // @author       Anton Shevchuk
 // @license      MIT License
@@ -21,7 +21,7 @@
 // ==/UserScript==
 
 /* jshint esversion: 8 */
-/* global require, $, window, W, I18n, OL, APIHelper, APIHelperUI, WazeWrap, NavigationPoint, Cache, Settings */
+/* global require, $, window, console, W, I18n, OL, APIHelper, APIHelperUI, WazeWrap, NavigationPoint, Cache, Settings */
 (function () {
   'use strict';
 
@@ -233,20 +233,12 @@
     element(lon, lat, city, street, number, name = '') {
       // Raw data from provider
       let raw = [street, number, name].filter(x => !!x).join(', ');
-      if (city) {
-        city = normalizeCity(city);
-      }
-      if (street) {
-        street = normalizeStreet(street);
-      }
-      if (number) {
-        number = normalizeNumber(number);
-      }
-      if (name) {
-        name = normalizeName(name);
-      }
+      city = normalizeCity(city);
+      street = normalizeStreet(street);
+      number = normalizeNumber(number);
+      name = normalizeName(name);
       let title = [street, number, name].filter(x => !!x).join(', ');
-      let item = {
+      return {
         lat: lat,
         lon: lon,
         city: city,
@@ -256,7 +248,6 @@
         title: title,
         raw: raw,
       };
-      return item;
     }
 
     /**
@@ -465,14 +456,15 @@
       let number = '';
       if (res.metaDataProperty.GeocoderMetaData.Address.Components) {
         for (let el in res.metaDataProperty.GeocoderMetaData.Address.Components) {
-          if (res.metaDataProperty.GeocoderMetaData.Address.Components[el]['kind'] === 'locality') {
-            city = res.metaDataProperty.GeocoderMetaData.Address.Components[el]['name'];
+          let component = res.metaDataProperty.GeocoderMetaData.Address.Components[el];
+          if (component.kind === 'locality') {
+            city = component.name;
           }
-          if (res.metaDataProperty.GeocoderMetaData.Address.Components[el]['kind'] === 'street') {
-            street = res.metaDataProperty.GeocoderMetaData.Address.Components[el]['name'];
+          if (component.kind === 'street') {
+            street = component.name;
           }
-          if (res.metaDataProperty.GeocoderMetaData.Address.Components[el]['kind'] === 'house') {
-            number = res.metaDataProperty.GeocoderMetaData.Address.Components[el]['name'];
+          if (component.kind === 'house') {
+            number = component.name;
           }
         }
       }
@@ -821,10 +813,10 @@
     let addressHN = poi.getAddress().attributes.houseNumber;
     if (number) {
       if (addressHN) {
-        if (addressHN !== number
-          && addressHN !== number.replace('к', '-')
-          && addressHN !== number.replace('/', '-')
-          && window.confirm(I18n.t(NAME).questions.changeNumber + '\n«' + addressHN + '» ⟶ «' + number + '»?')) {
+        if (addressHN !== number &&
+          addressHN !== number.replace('к', '-') &&
+          addressHN !== number.replace('/', '-') &&
+          window.confirm(I18n.t(NAME).questions.changeNumber + '\n«' + addressHN + '» ⟶ «' + number + '»?')) {
           newHN = number;
         }
       } else {
@@ -854,8 +846,8 @@
     let addressStreet = poi.getAddress().getStreet().name;
     if (street) {
       if (addressStreet) {
-        if (addressStreet !== street
-          && window.confirm(I18n.t(NAME).questions.changeStreet + '\n«' + addressStreet + '» ⟶ «' + street + '»?')) {
+        if (addressStreet !== street &&
+          window.confirm(I18n.t(NAME).questions.changeStreet + '\n«' + addressStreet + '» ⟶ «' + street + '»?')) {
           newStreet = street;
         }
       } else {
@@ -868,8 +860,8 @@
     let addressCity = poi.getAddress().getCity().getName();
     if (city) {
       if (addressCity) {
-        if (addressCity !== city
-          && window.confirm(I18n.t(NAME).questions.changeCity + '\n«' + addressCity + '» ⟶ «' + city + '»?')) {
+        if (addressCity !== city &&
+          window.confirm(I18n.t(NAME).questions.changeCity + '\n«' + addressCity + '» ⟶ «' + city + '»?')) {
           newCity = city;
         }
       } else {
@@ -925,14 +917,28 @@
   }
 
   /**
+   * @param   {string} str
+   * @returns {string}
+   */
+  function normalizeString(str) {
+    // Clear space symbols
+    str = str.trim()
+      .replace(/"/g, '')
+      .replace(/\s{2,}/g, ' ')
+    ;
+    // Clear accents/diacritics, but "\u0306" needed for "й"
+    str = str.normalize('NFD').replace(/[\u0300-\u0305\u0309-\u036f]/g, '');
+    return str;
+  }
+
+  /**
    * @param  {string} name
    * @return {string}
    */
   function normalizeName(name) {
-    name = name.trim();
+    name = normalizeString(name);
     name = name.replace('№', '');
     name = name.replace(/\.$/, '');
-    name = name.replace(/\s{2,}/, ' ');
     return name;
   }
 
@@ -941,20 +947,19 @@
    * @return {string}
    */
   function normalizeCity(city) {
-    // Clear accents/diacritics
-    city = city.trim().normalize('NFD').replace(/[\u0300-\u0305\u0307-\u036f]/g, '');
+    city = normalizeString(city);
 
+    if (city === '') {
+      return '';
+    }
+
+    // Get list of all available cities
     let cities = W.model.cities.getObjectArray().filter(m => m.attributes.name !== null && m.attributes.name !== '').map(m => m.attributes.name);
 
-    if (city === '' && cities.length === 0) {
-      city = '';
-    } else if (city === '' && cities.length === 1) {
-      city = cities[0];
-    } else {
-      let best = findBestMatch(city, cities);
-      if (best) {
-        city = best;
-      }
+    // More than one city, use city with best matching score
+    let best = findBestMatch(city, cities);
+    if (best > -1) {
+      city = cities[best];
     }
     console.log('E50:', arguments[0], '=>', city);
     return city;
@@ -965,8 +970,12 @@
    * @return {string}
    */
   function normalizeStreet(street) {
-    // Clear accents/diacritics
-    street = street.trim().normalize('NFD').replace(/[\u0300-\u0305\u0307-\u036f]/g, '');
+    street = normalizeString(street);
+
+    if (street === '') {
+      return '';
+    }
+
     // Normalize title
     let regs = {
       '(^| )бульвар( |$)': '$1б-р$2',
@@ -978,6 +987,7 @@
       '(^| )дорога( |$)': '$1дор.$2',
       '(^| )мікрорайон( |$)': '$1мкрн.$2',
       '(^| )набережна( |$)': '$1наб.$2',
+      '(^| )площадь( |$)': '$1площа$2',
       '(^| )провулок( |$)': '$1пров.$2',
       '(^| )проїзд( |$)': '$1пр.$2',
       '(^| )проспект( |$)': '$1просп.$2',
@@ -1002,13 +1012,14 @@
     let type = typeMatch ? typeMatch[1] : 'вул\\.'; // Special for 2GIS
     let reType = new RegExp('(' + type + ')', 'i');
     // Filter street type
-    // console.log(streets, street, typeMatch);
     streets = streets.filter(str => reType.test(str));
-    // console.log(streets);
     // Matching
-    let best = findBestMatch(street, streets);
-    if (best) {
-      street = best;
+    let best = findBestMatch(
+      street.replace(reType, '').trim(),
+      streets.map(str => str.replace(reType, '').trim())
+    );
+    if (best > -1) {
+      street = streets[best];
     }
     console.log('E50:', arguments[0], '=>', street);
     return street;
@@ -1051,8 +1062,8 @@
 
   function toClipboard(text) {
     // normalize
-    text = text.replace('\'', '');
-    text = text.replace('"', '');
+    text = normalizeString(text);
+    text = text.replace(/'/g, '');
     // use search input for copy text to clipboard
     let input = document.querySelector('input.search-query');
     let old = input.value;
@@ -1065,7 +1076,7 @@
   }
 
   /**
-   * Show vector from centdr of the selected POI to point by lon and lat
+   * Show vector from centr of the selected POI to point by lon and lat
    */
   function showVector() {
     let poi = getSelectedPOI();
@@ -1131,9 +1142,7 @@
     let firstBigrams = new Map();
     for (let i = 0; i < first.length - 1; i++) {
       const bigram = first.substring(i, i + 2);
-      const count = firstBigrams.has(bigram)
-        ? firstBigrams.get(bigram) + 1
-        : 1;
+      const count = firstBigrams.has(bigram) ? firstBigrams.get(bigram) + 1 : 1;
 
       firstBigrams.set(bigram, count);
     }
@@ -1141,9 +1150,7 @@
     let intersectionSize = 0;
     for (let i = 0; i < second.length - 1; i++) {
       const bigram = second.substring(i, i + 2);
-      const count = firstBigrams.has(bigram)
-        ? firstBigrams.get(bigram)
-        : 0;
+      const count = firstBigrams.has(bigram) ? firstBigrams.get(bigram) : 0;
 
       if (count > 0) {
         firstBigrams.set(bigram, count - 1);
@@ -1157,20 +1164,27 @@
   /**
    * @param  {string} mainString
    * @param  {string[]} targetStrings
-   * @return {string}
+   * @return {number}
    */
   function findBestMatch(mainString, targetStrings) {
     let bestMatch = '';
     let bestMatchRating = 0;
+    let bestMatchIndex = -1;
 
     for (let i = 0; i < targetStrings.length; i++) {
       let rating = compareTwoStrings(mainString, targetStrings[i]);
       if (rating > bestMatchRating) {
         bestMatch = targetStrings[i];
         bestMatchRating = rating;
+        bestMatchIndex = i;
       }
     }
-    console.log('E50:', mainString, ' <=> ', bestMatch, ' = ', bestMatchRating);
-    return bestMatch;
+    if (bestMatch === '' || bestMatchRating < 0.33) {
+      console.log('E50:', mainString, 'not matched');
+      return -1;
+    } else {
+      console.log('E50:', mainString, '<=>', bestMatch, '=', bestMatchRating);
+      return bestMatchIndex;
+    }
   }
 })();
