@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         WME E50 Fetch POI Data
-// @version      0.0.25
+// @version      0.0.26
 // @description  Fetch information about the POI from external sources
 // @author       Anton Shevchuk
 // @license      MIT License
@@ -958,6 +958,9 @@
     // Get list of all available cities
     let cities = W.model.cities.getObjectArray().filter(m => m.attributes.name !== null && m.attributes.name !== '').map(m => m.attributes.name);
 
+    // TODO: remove anything in the "()"
+    // cities = cities.map(city => city.replace(/(\\(\\)))/gi, ''));
+
     // More than one city, use city with best matching score
     let best = findBestMatch(city, cities);
     if (best > -1) {
@@ -1013,16 +1016,22 @@
     let streets = W.model.streets.getObjectArray().filter(m => m.name !== null && m.name !== '').map(m => m.name);
 
     // Get type and create RegExp for filter streets
-    let reTypes = new RegExp('(алея|б-р|в\'їзд|вул\\.|дор\\.|мкрн|наб\\.|площа|пров\\.|пр\\.|просп\\.|р-н|ст\\.|тракт|траса|тупик|узвіз|шосе)', 'i');
-    let typeMatch = street.match(reTypes);
-    let type = typeMatch ? typeMatch[1] : 'вул\\.'; // Special for 2GIS
-    let reType = new RegExp('(' + type + ')', 'i');
-    // Filter street type
-    streets = streets.filter(str => reType.test(str));
-    // Matching
+    let reTypes = new RegExp('(алея|б-р|в\'їзд|вул\\.|дор\\.|мкрн|наб\\.|площа|пров\\.|пр\\.|просп\\.|р-н|ст\\.|тракт|траса|тупик|узвіз|шосе)', 'gi');
+    let matches = [...street.matchAll(reTypes)];
+    let types = [];
+
+    // Detect type(s)
+    if (matches.length === 0) {
+      types.push('вул.'); // setup basic type
+    } else {
+      types = matches.map(match => match[0].toLowerCase());
+    }
+    // Filter streets by detected type(s)
+    streets = streets.filter(street => types.some(type => street.indexOf(type) > -1));
+    // Matching without type(s)
     let best = findBestMatch(
-      street.replace(reType, '').trim(),
-      streets.map(str => str.replace(reType, '').trim())
+      street.replace(reTypes, '').trim(),
+      streets.map(street => street.replace(reTypes, '').trim())
     );
     if (best > -1) {
       street = streets[best];
@@ -1189,7 +1198,7 @@
         bestMatchIndex = i;
       }
     }
-    if (bestMatch === '' || bestMatchRating < 0.33) {
+    if (bestMatch === '' || bestMatchRating < 0.35) {
       console.log('E50:', mainString, 'not matched', targetStrings);
       return -1;
     } else {
