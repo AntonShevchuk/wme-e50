@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         WME E50 Fetch POI Data
-// @version      0.0.26
+// @version      0.0.27
 // @description  Fetch information about the POI from external sources
 // @author       Anton Shevchuk
 // @license      MIT License
@@ -882,7 +882,14 @@
 
     // If no entry point we would create it
     if (E50Settings.get('options', 'entryPoint') && poi.attributes.entryExitPoints.length === 0) {
-      let navPoint = new NavigationPoint(poi.geometry.getCentroid());
+      // Create point based on data from external source
+      let point = new OL.Geometry.Point(lon, lat).transform('EPSG:4326', 'EPSG:900913');
+      // Check intersection with selected POI
+      if (!poi.getPolygonGeometry().intersects(point)) {
+        point = poi.geometry.getCentroid();
+      }
+      // Create entry point
+      let navPoint = new NavigationPoint(point);
       W.model.actionManager.add(new WazeActionUpdateObject(poi, {entryExitPoints: [navPoint]}));
     }
 
