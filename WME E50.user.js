@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         WME E50 Fetch POI Data
-// @version      0.0.28
+// @version      0.0.29
 // @description  Fetch information about the POI from external sources
 // @author       Anton Shevchuk
 // @license      MIT License
@@ -932,7 +932,7 @@
   function normalizeString(str) {
     // Clear space symbols and double quotes
     str = str.trim()
-      .replace(/"/g, '')
+      .replace(/["“]/g, '')
       .replace(/\s{2,}/g, ' ')
     ;
     // Clear accents/diacritics, but "\u0306" needed for "й"
@@ -1079,7 +1079,7 @@
     // process "буд."
     number = number.replace(/^буд\./i, '');
     // process "корпус" to "к"
-    number = number.replace(/(.*)к(?:орп)?(\d+)/gi, '$1к$2');
+    number = number.replace(/(.*)к(?:орп|орпус)?(\d+)/gi, '$1к$2');
     // process "N-M" to "NM"
     number = number.replace(/(.*)-([а-яі])/gi, '$1$2');
 
