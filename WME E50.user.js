@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         WME E50 Fetch POI Data
-// @version      0.0.30
+// @version      0.0.31
 // @description  Fetch information about the POI from external sources
 // @author       Anton Shevchuk
 // @license      MIT License
@@ -40,13 +40,14 @@
       options: {
         title: 'Options',
         modal: 'Use modal window',
+        transparent: 'Transparent modal window',
         entryPoint: 'Create Entry Point if not exists',
         copyData: 'Copy POI data to clipboard on click',
         lock: 'Lock POI to 2 level',
       },
       providers: {
         title: 'Providers',
-        magic: 'Auto',
+        magic: 'Closest Segment',
         osm: 'Open Street Map',
         gis: '2GIS',
         bing: 'Bing',
@@ -69,13 +70,14 @@
       options: {
         title: 'Налаштування',
         modal: 'Використовувати окрему панель',
+        transparent: 'Напівпрозора панель',
         entryPoint: 'Створювати точку в\'їзду, якщо відсутня',
         copyData: 'При виборі, копіювати до буферу обміну назву та адресу POI',
         lock: 'Блокувати POI 2-м рівнем',
       },
       providers: {
         title: 'Джерела',
-        magic: 'Автоматично',
+        magic: 'Найближчий сегмент',
         osm: 'Open Street Map',
         gis: '2GIS',
         bing: 'Bing',
@@ -98,13 +100,14 @@
       options: {
         title: 'Настройки',
         modal: 'Использовать отдельную панель',
+        transparent: 'Полупрозрачная панель',
         entryPoint: 'Создавать точку въезда если отсутствует',
         copyData: 'При виборе, копировать в буфер обмена название и адрес POI',
         lock: 'Блокировать POI 2-м уровнем',
       },
       providers: {
         title: 'Источники',
-        magic: 'Автоматически',
+        magic: 'Ближайший сегмент',
         osm: 'Open Street Map',
         gis: '2GIS',
         bing: 'Bing',
@@ -124,6 +127,7 @@
   const settings = {
     options: {
       modal: true,
+      transparent: false,
       entryPoint: true,
       copyData: true,
       lock: true,
@@ -155,7 +159,7 @@
     '#panel-container .archive-panel .body { overflow-x: auto; max-height: 420px; }'
   );
 
-  let WazeActionMultiAction = require('Waze/Action/MultiAction');
+  // let WazeActionMultiAction = require('Waze/Action/MultiAction');
   let WazeActionUpdateObject = require('Waze/Action/UpdateObject');
   let WazeActionUpdateFeatureAddress = require('Waze/Action/UpdateFeatureAddress');
 
@@ -321,7 +325,7 @@
     async request(lon, lat) {
       let city = '';
       let street = '';
-      let segment = WazeWrap.Geometry.findClosestSegment(new OL.Geometry.Point(lon, lat), true, true);
+      let segment = WazeWrap.Geometry.findClosestSegment(new OL.Geometry.Point(lon, lat).transform('EPSG:4326', 'EPSG:900913'), true, true);
       if (segment) {
         let address = segment.getAddress();
         city = address.attributes.city.attributes.name;
@@ -332,22 +336,21 @@
         let cities = W.model.cities.getObjectArray().filter(m => m.attributes.name !== null && m.attributes.name !== '').map(m => m.attributes.name);
         city = cities.length ? cities[0] : '';
       }
+      if (!city && !street) {
+        return [];
+      }
+
       // lon, lat, city, street, number, name
       return [
-        this.item(
-          [
-            lon,
-            lat,
-            city,
-            street,
-            '',
-            '',
-          ]
+        this.element(
+          lon,
+          lat,
+          city ? city : '',
+          street ? street : '',
+          '',
+          city
         )
       ];
-    }
-    item(res) {
-      return this.element(...res);
     }
   }
 
@@ -434,8 +437,8 @@
       let number = '';
       if (res.adm_div.length) {
         for (let i = 0; i < res.adm_div.length; i++) {
-          if (res.adm_div[i]['type'] === 'city') {
-            city = res.adm_div[i]['name'];
+          if (res.adm_div[i].type === 'city') {
+            city = res.adm_div[i].name;
           }
         }
       }
@@ -805,6 +808,11 @@
     }
 
     if (E50Settings.get('options', 'modal')) {
+      if (E50Settings.get('options', 'transparent')) {
+        parent.style.opacity = 0.6;
+        parent.onmouseover = () => parent.style.opacity = 1;
+        parent.onmouseout = () => parent.style.opacity = 0.6;
+      }
       modal.container().append(parent);
     } else {
       element.prepend(parent);
