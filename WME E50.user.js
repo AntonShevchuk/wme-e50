@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         WME E50 Fetch POI Data
-// @version      0.0.27
+// @version      0.0.28
 // @description  Fetch information about the POI from external sources
 // @author       Anton Shevchuk
 // @license      MIT License
@@ -965,8 +965,8 @@
     // Get list of all available cities
     let cities = W.model.cities.getObjectArray().filter(m => m.attributes.name !== null && m.attributes.name !== '').map(m => m.attributes.name);
 
-    // TODO: remove anything in the "()"
-    // cities = cities.map(city => city.replace(/(\\(\\)))/gi, ''));
+    // Remove text in the "( )"
+    cities = cities.map(city => city.replace(/( ?\(.*\))/gi, ''));
 
     // More than one city, use city with best matching score
     let best = findBestMatch(city, cities);
@@ -1053,7 +1053,7 @@
    */
   function normalizeNumber(number) {
     // remove spaces
-    number = number.trim().replace(' ', '');
+    number = number.trim().replace(/\s/g, '');
     number = number.toUpperCase();
     // process Latin to Cyrillic
     number = number.replace('A', 'А');
