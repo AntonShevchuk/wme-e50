@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         WME E50 Fetch POI Data
-// @version      0.0.29
+// @version      0.0.30
 // @description  Fetch information about the POI from external sources
 // @author       Anton Shevchuk
 // @license      MIT License
@@ -46,6 +46,7 @@
       },
       providers: {
         title: 'Providers',
+        magic: 'Auto',
         osm: 'Open Street Map',
         gis: '2GIS',
         bing: 'Bing',
@@ -74,6 +75,7 @@
       },
       providers: {
         title: 'Джерела',
+        magic: 'Автоматично',
         osm: 'Open Street Map',
         gis: '2GIS',
         bing: 'Bing',
@@ -102,6 +104,7 @@
       },
       providers: {
         title: 'Источники',
+        magic: 'Автоматически',
         osm: 'Open Street Map',
         gis: '2GIS',
         bing: 'Bing',
@@ -126,6 +129,7 @@
       lock: true,
     },
     providers: {
+      magic: false,
       osm: true,
       gis: true,
       bing: true,
@@ -307,6 +311,43 @@
         a.className += ' noaddress';
       }
       return a;
+    }
+  }
+
+  /**
+   * Based on closest segment and city
+   */
+  class MagicProvider extends Provider {
+    async request(lon, lat) {
+      let city = '';
+      let street = '';
+      let segment = WazeWrap.Geometry.findClosestSegment(new OL.Geometry.Point(lon, lat), true, true);
+      if (segment) {
+        let address = segment.getAddress();
+        city = address.attributes.city.attributes.name;
+        street = address.attributes.street.name;
+      }
+
+      if (!city) {
+        let cities = W.model.cities.getObjectArray().filter(m => m.attributes.name !== null && m.attributes.name !== '').map(m => m.attributes.name);
+        city = cities.length ? cities[0] : '';
+      }
+      // lon, lat, city, street, number, name
+      return [
+        this.item(
+          [
+            lon,
+            lat,
+            city,
+            street,
+            '',
+            '',
+          ]
+        )
+      ];
+    }
+    item(res) {
+      return this.element(...res);
     }
   }
 
@@ -720,6 +761,12 @@
 
     let selected = poi.geometry.getCentroid().clone();
     selected.transform('EPSG:900913', 'EPSG:4326');
+
+    if (E50Settings.get('providers').magic) {
+      let Magic = new MagicProvider('Magic');
+      Magic.container(container);
+      Magic.search(selected.x, selected.y);
+    }
 
     if (E50Settings.get('providers').osm) {
       let Osm = new OsmProvider('OSM');
