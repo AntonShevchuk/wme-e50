@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         WME E50 Fetch POI Data
-// @version      0.0.31
+// @version      0.0.32
 // @description  Fetch information about the POI from external sources
 // @author       Anton Shevchuk
 // @license      MIT License
@@ -34,6 +34,7 @@
   const TRANSLATION = {
     'en': {
       title: 'Information',
+      notFound: 'Not found',
       description: {
         copyData: 'Copy name and address of the selected POI to clipboard',
       },
@@ -64,6 +65,7 @@
     },
     'uk': {
       title: 'Інформація',
+      notFound: 'Нічого не знайдено',
       description: {
         copyData: 'Копіювати до буферу обміну назву та адресу обраного POI',
       },
@@ -94,6 +96,7 @@
     },
     'ru': {
       title: 'Информация',
+      notFound: 'Ничего не найдено',
       description: {
         copyData: 'Копировать в буфер обмена название и адрес выбранного POI',
       },
@@ -176,6 +179,7 @@
       this.panel = document.createElement('div');
       this.panel.id = 'E50-' + this.uid;
       this.panel.className = 'e50';
+      this.parent = null;
     }
 
     /**
@@ -263,7 +267,7 @@
      * @param dom
      */
     container(dom) {
-      dom.append(this.panel);
+      this.parent = dom;
     }
 
     /**
@@ -273,6 +277,7 @@
       if (this.response.length === 0) {
         return;
       }
+
 
       let fieldset = document.createElement('fieldset');
       let list = document.createElement('ul');
@@ -291,7 +296,15 @@
         return false;
       };
       fieldset.append(legend, list);
+
       this.panel.append(fieldset);
+      this.parent.append(this.panel);
+      /*
+      let notFound = this.parent.querySelector('div.not-found');
+      if (notFound) {
+        notFound.remove();
+      }
+      */
     }
 
     /**
@@ -375,15 +388,14 @@
         url: url,
         data: data
       });
-      if (!response.address) {
-        return [];
-      } else {
+      if (response.address && response.address.house_number) {
         return [this.item(response)];
+      } else {
+        return [];
       }
     }
 
     item(res) {
-      let name = '';
       let city = '';
       let street = '';
       let number = '';
@@ -396,10 +408,7 @@
       if (res.address.house_number) {
         number = res.address.house_number;
       }
-      if (!street && !number) {
-        name = res.display_name.split(',', 2).join(',');
-      }
-      return this.element(res.lon, res.lat, city, street, number, name);
+      return this.element(res.lon, res.lat, city, street, number);
     }
   }
 
@@ -819,6 +828,14 @@
     } else {
       element.prepend(parent);
     }
+    /*
+    if (container.childElementCount === 0) {
+      let notFound = document.createElement('div');
+      notFound.className = 'not-found';
+      notFound.innerHTML = I18n.t(NAME).notFound;
+      container.prepend(notFound);
+    }
+    */
   }
 
   /**
