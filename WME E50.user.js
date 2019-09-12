@@ -383,7 +383,7 @@
     }
 
     item(res) {
-      let output = [];
+      let name = '';
       let city = '';
       let street = '';
       let number = '';
@@ -395,10 +395,11 @@
       }
       if (res.address.house_number) {
         number = res.address.house_number;
-      } else {
-        output.push(res.display_name.split(', ', 1));
       }
-      return this.element(res.lon, res.lat, city, street, number, output.join(', '));
+      if (!street && !number) {
+        name = res.display_name.split(',', 2).join(',');
+      }
+      return this.element(res.lon, res.lat, city, street, number, name);
     }
   }
 
@@ -629,8 +630,9 @@
       let address = res.vicinity.split(',');
       address = address.map(str => str.trim());
 
-      let street = address[0] && address[0].length > 8 ? address[0] : '';
-      let number = address[1] && address[1].length < 13 && /\d+/.test(address[1]) ? address[1] : '';
+      // looks like hell
+      let street = address[0] && address[0].length > 4 ? address[0] : '';
+      let number = address[1] && address[1].length < 13 ? address[1] : '';
       let city = address[2] ? address[2] : '';
 
       return this.element(
@@ -1020,7 +1022,7 @@
     // Get list of all available cities
     let cities = W.model.cities.getObjectArray().filter(m => m.attributes.name !== null && m.attributes.name !== '').map(m => m.attributes.name);
 
-    // Remove text in the "( )"
+    // Remove text in the "( )", Waze puts region name to the pair brackets
     cities = cities.map(city => city.replace(/( ?\(.*\))/gi, ''));
 
     // More than one city, use city with best matching score
@@ -1045,25 +1047,28 @@
 
     // Prepare street name
     street = street.replace(/[’']/, '\'');
+    // Remove text in the "( )", OSM puts alternative name to the pair brackets
+    street = street.replace(/( ?\(.*\))/gi, '');
 
     // Normalize title
     let regs = {
-      '(^| )бульвар( |$)': '$1б-р$2',
-      '(^| )вїзд( |$)': '$1в\'їзд$2',
-      '(^| )в\'ізд( |$)': '$1в\'їзд$2',
-      '(^|.+?) ?вулиця ?(.+|$)': 'вул. $1$2',
-      '^(.+)[ ]+вул\.?$': 'вул. $1',
-      '^вул[ ]+(.+)$': 'вул. $1',
-      '(^| )дорога( |$)': '$1дор.$2',
-      '(^| )мікрорайон( |$)': '$1мкрн.$2',
-      '(^| )набережна( |$)': '$1наб.$2',
-      '(^| )площадь( |$)': '$1площа$2',
-      '(^| )провулок провулок( |$)': '$1пров.$2',
-      '(^| )провулок( |$)': '$1пров.$2',
-      '(^| )проїзд( |$)': '$1пр.$2',
-      '(^| )проспект( |$)': '$1просп.$2',
-      '(^| )район( |$)': '$1р-н$2',
-      '(^| )станція( |$)': '$1ст.$2',
+      '(^| )бульвар( |$)': '$1б-р$2',         // normalize
+      '(^| )вїзд( |$)': '$1в\'їзд$2',         // fix mistakes
+      '(^| )в\'ізд( |$)': '$1в\'їзд$2',       // fix mistakes
+      '(^|.+?) ?вулиця ?(.+|$)': 'вул. $1$2', // normalize, but ignore Lviv rules
+      '(^|.+?) ?улица ?(.+|$)': 'вул. $1$2',  // translate, but ignore Lviv rules
+      '^(.+) в?ул\.?$': 'вул. $1',            // normalize and translate, but ignore Lviv rules
+      '^в?ул.? (.+)$': 'вул. $1',             // normalize and translate, but ignore Lviv rules
+      '(^| )дорога( |$)': '$1дор.$2',         // normalize
+      '(^| )мікрорайон( |$)': '$1мкрн.$2',    // normalize
+      '(^| )набережна( |$)': '$1наб.$2',      // normalize
+      '(^| )площадь( |$)': '$1площа$2',       // translate
+      '(^| )провулок провулок( |$)': '$1пров.$2', // O_o
+      '(^| )провулок( |$)': '$1пров.$2',      // normalize
+      '(^| )проїзд( |$)': '$1пр.$2',          // normalize
+      '(^| )проспект( |$)': '$1просп.$2',     // normalize
+      '(^| )район( |$)': '$1р-н$2',           // normalize
+      '(^| )станція( |$)': '$1ст.$2',         // normalize
     };
 
     for (let key in regs) {
@@ -1076,6 +1081,7 @@
 
     // Get all streets
     let streets = W.model.streets.getObjectArray().filter(m => m.name !== null && m.name !== '').map(m => m.name);
+
 
     // Get type and create RegExp for filter streets
     let reTypes = new RegExp('(алея|б-р|в\'їзд|вул\\.|дор\\.|мкрн|наб\\.|площа|пров\\.|пр\\.|просп\\.|р-н|ст\\.|тракт|траса|тупик|узвіз|шосе)', 'gi');
@@ -1092,8 +1098,8 @@
     streets = streets.filter(street => types.some(type => street.indexOf(type) > -1));
     // Matching without type(s)
     let best = findBestMatch(
-      street.replace(reTypes, '').trim(),
-      streets.map(street => street.replace(reTypes, '').trim())
+      street.replace(reTypes, '').toLowerCase().trim(),
+      streets.map(street => street.replace(reTypes, '').toLowerCase().trim())
     );
     if (best > -1) {
       street = streets[best];
@@ -1107,6 +1113,12 @@
    * @return {string}
    */
   function normalizeNumber(number) {
+    // process "д."
+    number = number.replace(/^д\. ?/i, '');
+    // process "дом"
+    number = number.replace(/^дом ?/i, '');
+    // process "буд."
+    number = number.replace(/^буд\. ?/i, '');
     // remove spaces
     number = number.trim().replace(/\s/g, '');
     number = number.toUpperCase();
@@ -1127,17 +1139,15 @@
     number = number.replace('І', 'і');
     number = number.replace('З', 'з');
     number = number.replace('О', 'о');
-    // process "д."
-    number = number.replace(/^д\./i, '');
-    // process "дом"
-    number = number.replace(/^дом ?/i, '');
-    // process "буд."
-    number = number.replace(/^буд\./i, '');
     // process "корпус" to "к"
     number = number.replace(/(.*)к(?:орп|орпус)?(\d+)/gi, '$1к$2');
-    // process "N-M" to "NM"
-    number = number.replace(/(.*)-([а-яі])/gi, '$1$2');
-
+    // process "N-M" or "N/M" to "NM"
+    number = number.replace(/(.*)[-/]([а-яі])/gi, '$1$2');
+    // valid number format
+    //  123А  123А/321 123А/321Б 123к1 123Ак2
+    if (!number.match(/^\d+[а-яі]?([/к]\d+[а-яі]?)?$/gi)) {
+      return '';
+    }
     return number;
   }
 
