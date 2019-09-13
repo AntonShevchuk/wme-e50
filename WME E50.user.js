@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         WME E50 Fetch POI Data
-// @version      0.0.32
+// @version      0.0.33
 // @description  Fetch information about the POI from external sources
 // @author       Anton Shevchuk
 // @license      MIT License
@@ -159,7 +159,10 @@
     '.e50 li a:hover { background: #ddd }' +
     '.e50 li a.noaddress { background: rgba(255, 255, 200, 0.5) }' +
     '.e50 li a.noaddress:hover { background: rgba(255, 255, 200, 1) }' +
-    '#panel-container .archive-panel .body { overflow-x: auto; max-height: 420px; }'
+    '#panel-container .archive-panel .body { overflow-x: auto; max-height: 420px; }' +
+    '.e50 div.controls:empty, #panel-container .archive-panel .body:empty { min-height: 20px; }' +
+    '.e50 div.controls:empty::after, #panel-container .archive-panel .body:empty::after { color: #ccc; content: "' + I18n.t(NAME).notFound + '" }'
+
   );
 
   // let WazeActionMultiAction = require('Waze/Action/MultiAction');
@@ -208,7 +211,7 @@
         console.log('E50:', this.uid, this.response);
         this.render();
       } catch (e) {
-        console.error(e);
+        console.error('E50:', this.uid, e);
       }
     }
 
@@ -268,6 +271,7 @@
      */
     container(dom) {
       this.parent = dom;
+      this.parent.append(this.panel);
     }
 
     /**
@@ -275,6 +279,7 @@
      */
     render() {
       if (this.response.length === 0) {
+        this.panel.remove();
         return;
       }
 
@@ -298,13 +303,6 @@
       fieldset.append(legend, list);
 
       this.panel.append(fieldset);
-      this.parent.append(this.panel);
-      /*
-      let notFound = this.parent.querySelector('div.not-found');
-      if (notFound) {
-        notFound.remove();
-      }
-      */
     }
 
     /**
@@ -828,14 +826,6 @@
     } else {
       element.prepend(parent);
     }
-    /*
-    if (container.childElementCount === 0) {
-      let notFound = document.createElement('div');
-      notFound.className = 'not-found';
-      notFound.innerHTML = I18n.t(NAME).notFound;
-      container.prepend(notFound);
-    }
-    */
   }
 
   /**
@@ -919,7 +909,7 @@
 
     // POI Address Street Name
     let newStreet;
-    let addressStreet = poi.getAddress().getStreet().name;
+    let addressStreet = poi.getAddress().getStreet() ? poi.getAddress().getStreet().name : '';
     if (street) {
       if (addressStreet) {
         if (addressStreet !== street &&
@@ -933,7 +923,7 @@
 
     // POI Address City
     let newCity;
-    let addressCity = poi.getAddress().getCity().getName();
+    let addressCity = poi.getAddress().getCity() ? poi.getAddress().getCity().getName() : '';
     if (city) {
       if (addressCity) {
         if (addressCity !== city &&
@@ -1020,7 +1010,7 @@
    */
   function normalizeName(name) {
     name = normalizeString(name);
-    name = name.replace('№', '');
+    name = name.replace(/[№#]/g, '');
     name = name.replace(/\.$/, '');
     return name;
   }
@@ -1099,7 +1089,6 @@
     // Get all streets
     let streets = W.model.streets.getObjectArray().filter(m => m.name !== null && m.name !== '').map(m => m.name);
 
-
     // Get type and create RegExp for filter streets
     let reTypes = new RegExp('(алея|б-р|в\'їзд|вул\\.|дор\\.|мкрн|наб\\.|площа|пров\\.|пр\\.|просп\\.|р-н|ст\\.|тракт|траса|тупик|узвіз|шосе)', 'gi');
     let matches = [...street.matchAll(reTypes)];
@@ -1108,6 +1097,7 @@
     // Detect type(s)
     if (matches.length === 0) {
       types.push('вул.'); // setup basic type
+      street = 'вул. ' + street;
     } else {
       types = matches.map(match => match[0].toLowerCase());
     }
