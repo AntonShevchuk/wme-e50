@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         WME E50 Fetch POI Data
-// @version      0.0.33
+// @version      0.0.34
 // @description  Fetch information about the POI from external sources
 // @author       Anton Shevchuk
 // @license      MIT License
@@ -208,10 +208,10 @@
           this.response = await this.request(lon, lat);
           E50Cache.set(key, this.response);
         }
-        console.log('E50:', this.uid, this.response);
+        console.log(NAME, this.uid, this.response);
         this.render();
       } catch (e) {
-        console.error('E50:', this.uid, e);
+        console.error(NAME, this.uid, e);
       }
     }
 
@@ -869,6 +869,14 @@
       newName = name;
     } else if (number) {
       newName = number;
+      // Update alias for korpus
+      if ((new RegExp('[0-9]+[а-яі]?к[0-9]+', 'i')).test(number)) {
+        let alias = number.replace('к', ' корпус ');
+        if (poi.attributes.aliases.indexOf(alias) === -1) {
+          poi.attributes.aliases.push(alias);
+          W.model.actionManager.add(new WazeActionUpdateObject(poi, {aliases: poi.attributes.aliases}));
+        }
+      }
     }
     if (newName) {
       W.model.actionManager.add(new WazeActionUpdateObject(poi, {name: newName}));
@@ -878,10 +886,14 @@
     let newHN;
     let addressHN = poi.getAddress().attributes.houseNumber;
     if (number) {
-      if (addressHN) {
+      // Normalize «korpus»
+      number = number.replace(/^(\d+)к(\d+)$/i, '$1-$2');
+      // Check number for invalid format for Waze
+      if ((new RegExp('^[0-9]+[а-яі][к|/][0-9]+$', 'i')).test(number)) {
+        // Skip this step
+        console.log(NAME, 'skipped «' + number + '»');
+      } else if (addressHN) {
         if (addressHN !== number &&
-          addressHN !== number.replace('к', '-') &&
-          addressHN !== number.replace('/', '-') &&
           window.confirm(I18n.t(NAME).questions.changeNumber + '\n«' + addressHN + '» ⟶ «' + number + '»?')) {
           newHN = number;
         }
@@ -889,21 +901,7 @@
         newHN = number;
       }
       if (newHN) {
-        let aliases = poi.attributes.aliases;
-        // Set "корпус" as alias for name
-        // Replace "к" with "-"
-        if ((new RegExp('[0-9]+[а-яі]?к[0-9]+', 'i')).test(newHN)) {
-          let alias = newHN.replace('к', ' корпус ');
-          if (aliases.indexOf(alias) === -1) {
-            aliases.push(alias);
-          }
-          newHN = newHN.replace('к', '-');
-        }
-        // Replace "/" with "-" for house with letter
-        if ((new RegExp('[0-9]+[а-яі]\\/[0-9]+', 'i')).test(newHN)) {
-          newHN = newHN.replace('/', '-');
-        }
-        W.model.actionManager.add(new WazeActionUpdateObject(poi, {houseNumber: newHN, aliases: aliases}));
+        W.model.actionManager.add(new WazeActionUpdateObject(poi, {houseNumber: newHN}));
       }
     }
 
@@ -1037,7 +1035,7 @@
     if (best > -1) {
       city = cities[best];
     }
-    console.log('E50:', arguments[0], '=>', city);
+    console.log(NAME, arguments[0], '=>', city);
     return city;
   }
 
@@ -1110,8 +1108,17 @@
     );
     if (best > -1) {
       street = streets[best];
+    } else {
+      // TODO: Matching with type
+      best = findBestMatch(
+        street.toLowerCase().trim(),
+        streets.map(street => street.toLowerCase().trim())
+      );
+      if (best > -1) {
+        street = streets[best];
+      }
     }
-    console.log('E50:', arguments[0], '=>', street);
+    console.log(NAME, arguments[0], '=>', street);
     return street;
   }
 
@@ -1170,7 +1177,7 @@
     input.setSelectionRange(0, 99999);
     document.execCommand("copy");
     input.value = old;
-    console.log('E50: copied «' + text + '»');
+    console.log(NAME, 'copied «' + text + '»');
   }
 
   /**
@@ -1278,10 +1285,10 @@
       }
     }
     if (bestMatch === '' || bestMatchRating < 0.35) {
-      console.log('E50:', mainString, 'not matched', targetStrings);
+      console.log(NAME, mainString, 'not matched', targetStrings);
       return -1;
     } else {
-      console.log('E50:', mainString, '<=>', bestMatch, '=', bestMatchRating);
+      console.log(NAME, mainString, '<=>', bestMatch, '=', bestMatchRating);
       return bestMatchIndex;
     }
   }
