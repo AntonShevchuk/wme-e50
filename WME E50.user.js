@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         WME E50 Fetch POI Data
-// @version      0.1.0
+// @version      0.1.1
 // @description  Fetch information about the POI from external sources
 // @author       Anton Shevchuk
 // @license      MIT License
@@ -59,6 +59,7 @@
       maps: {
         title: 'Maps',
         gis: '2GIS',
+        yandex: 'Yandex',
       },
       questions: {
         changeName: 'Are you sure to change the name?',
@@ -94,6 +95,7 @@
       maps: {
         title: 'Карти',
         gis: '2GIS',
+        yandex: 'Яндекс',
       },
       questions: {
         changeName: 'Ви впевненні що хочете змінити им\'я?',
@@ -129,6 +131,7 @@
       maps: {
         title: 'Карты',
         gis: '2GIS',
+        yandex: 'Яндекс',
       },
       questions: {
         changeName: 'Ви уверены, что хотите изменить имя?',
@@ -157,7 +160,8 @@
       yandex: true,
     },
     maps: {
-      gis: false
+      gis: false,
+      yandex: false,
     }
   };
 
@@ -300,6 +304,10 @@
       if (this.response.length === 0) {
         // remove empty panel
         this.panel.remove();
+        // remove empty map
+        if (this.map.childElementCount === 0) {
+          // this.map.remove();
+        }
         return;
       }
 
@@ -589,6 +597,16 @@
         number
       );
     }
+    async preview(lat, lon) {
+      await this.script('https://api-maps.yandex.ru/2.1/?lang=uk_UA');
+      ymaps.ready(() =>
+        new ymaps.Map(NAME + '-map-' + this.uid, {
+          center: [lon, lat],
+          zoom: W.map.getZoom() + 11,
+          controls: ["zoomControl", "fullscreenControl"]
+        })
+      );
+    }
   }
 
   /**
@@ -864,6 +882,9 @@
 
     if (E50Settings.get('providers').yandex) {
       let Yandex = new YMProvider('Yandex', container);
+      if (E50Settings.get('maps').yandex) {
+        Yandex.preview(selected.x, selected.y);
+      }
       Yandex.search(selected.x, selected.y);
     }
 
