@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         WME E50 Fetch POI Data
-// @version      0.0.34
+// @version      0.1.0
 // @description  Fetch information about the POI from external sources
 // @author       Anton Shevchuk
 // @license      MIT License
@@ -56,6 +56,10 @@
         google: 'Google',
         yandex: 'Yandex',
       },
+      maps: {
+        title: 'Maps',
+        gis: '2GIS',
+      },
       questions: {
         changeName: 'Are you sure to change the name?',
         changeCity: 'Are you sure to change the city?',
@@ -86,6 +90,10 @@
         here: 'HERE',
         google: 'Google',
         yandex: 'Яндекс',
+      },
+      maps: {
+        title: 'Карти',
+        gis: '2GIS',
       },
       questions: {
         changeName: 'Ви впевненні що хочете змінити им\'я?',
@@ -118,6 +126,10 @@
         google: 'Google',
         yandex: 'Яндекс',
       },
+      maps: {
+        title: 'Карты',
+        gis: '2GIS',
+      },
       questions: {
         changeName: 'Ви уверены, что хотите изменить имя?',
         changeCity: 'Ви уверены, что хотите изменить город?',
@@ -143,6 +155,9 @@
       here: true,
       google: true,
       yandex: true,
+    },
+    maps: {
+      gis: false
     }
   };
 
@@ -176,13 +191,15 @@
    * Basic Provider class
    */
   class Provider {
-    constructor(uid) {
+    constructor(uid, container) {
       this.uid = uid;
       this.response = [];
-      this.panel = document.createElement('div');
-      this.panel.id = 'E50-' + this.uid;
-      this.panel.className = 'e50';
-      this.parent = null;
+      // prepare DOM
+      this.panel = this._panel();
+      this.map = this._map();
+      this.container = container;
+      this.container.append(this.panel);
+      this.container.append(this.map);
     }
 
     /**
@@ -213,6 +230,17 @@
       } catch (e) {
         console.error(NAME, this.uid, e);
       }
+    }
+
+    /**
+     * Load external JS Map library
+     * @param  {String} script
+     * @return {Promise<*>}
+     */
+    async script(script) {
+      // this.map.style.width = E50Settings.get('options', 'modal') ? '236px' : '286px';
+      this.map.style.height = E50Settings.get('options', 'modal') ? '236px' : '286px';
+      return await $.getScript(script);
     }
 
     /**
@@ -264,53 +292,76 @@
         raw: raw,
       };
     }
-
-    /**
-     * Inject panel to target HTML element
-     * @param dom
-     */
-    container(dom) {
-      this.parent = dom;
-      this.parent.append(this.panel);
-    }
-
+    
     /**
      * Render result to target element
      */
     render() {
       if (this.response.length === 0) {
+        // remove empty panel
         this.panel.remove();
         return;
       }
 
+      this.panel.append(this._fieldset());
+    }
 
+    /**
+     * Create div for all items
+     * @return {HTMLDivElement}
+     * @private
+     */
+    _panel() {
+      let div = document.createElement('div');
+      div.id = NAME + '-' + this.uid;
+      div.className = 'e50';
+      return div;
+    }
+
+    /**
+     * Build div for map
+     * @return {HTMLDivElement}
+     * @protected
+     */
+    _map() {
+      let div = document.createElement('div');
+      div.id = NAME + '-map-' + this.uid;
+      return div;
+    }
+
+    /**
+     * Build fieldset with list of the response items
+     * @return {HTMLFieldSetElement}
+     * @protected
+     */
+    _fieldset() {
       let fieldset = document.createElement('fieldset');
       let list = document.createElement('ul');
       list.style.display = this.response.length > 2 ? 'none' : 'block';
 
       for (let i = 0; i < this.response.length; i++) {
         let item = document.createElement('li');
-        item.append(this.link(this.response[i]));
+        item.append(this._link(this.response[i]));
         list.append(item);
       }
 
       let legend = document.createElement('legend');
       legend.innerHTML = this.uid + ' [' + this.response.length + ']';
       legend.onclick = function () {
-        $(this).next().toggle();
+        $(this).nextAll().toggle();
         return false;
       };
       fieldset.append(legend, list);
-
-      this.panel.append(fieldset);
+      return fieldset;
     }
 
     /**
      * Build link by {Object}
      * @param  {Object} item
      * @return {HTMLAnchorElement}
+     * @protected
      */
-    link(item) {
+    _link(item) {
       let a = document.createElement('a');
       a.href = '#';
       a.dataset.lat = item.lat;
@@ -437,7 +488,6 @@
       }
       return this.collection(response.result.items);
     }
-
     item(res) {
       let output = [];
       let city = '';
@@ -468,6 +518,17 @@
         element.raw += ', ' + res.purpose_name;
       }
       return element;
+    }
+    async preview(lat, lon) {
+      await this.script('https://maps.api.2gis.ru/2.0/loader.js?pkg=basic');
+      DG.then(() =>
+        DG.map(NAME + '-map-' + this.uid, {
+          center: [lon, lat],
+          zoom: W.map.getZoom() + 11,
+          fullscreenControl: false,
+          zoomControl: false
+        })
+      );
     }
   }
 
@@ -632,7 +693,6 @@
       }
       return this.collection(response.results);
     }
-
     item(res) {
       let address = res.vicinity.split(',');
       address = address.map(str => str.trim());
@@ -692,6 +752,16 @@
       }, E50Settings.get('providers', item));
     }
     tab.addElement(fsProviders);
+
+    // Setup providers map settings
+    let fsMaps = helper.createFieldset(I18n.t(NAME).maps.title);
+    let maps = E50Settings.get('maps');
+    for (let item in maps) {
+      fsMaps.addCheckbox('maps-' + item, I18n.t(NAME).maps[item], I18n.t(NAME).maps[item], function (event) {
+        E50Settings.set(['maps', item], event.target.checked);
+      }, E50Settings.get('maps', item));
+    }
+    tab.addElement(fsMaps);
     tab.inject();
 
     // Shortcut for copy POI data to clipboard
@@ -775,44 +845,40 @@
     selected.transform('EPSG:900913', 'EPSG:4326');
 
     if (E50Settings.get('providers').magic) {
-      let Magic = new MagicProvider('Magic');
-      Magic.container(container);
+      let Magic = new MagicProvider('Magic', container);
       Magic.search(selected.x, selected.y);
     }
 
     if (E50Settings.get('providers').osm) {
-      let Osm = new OsmProvider('OSM');
-      Osm.container(container);
+      let Osm = new OsmProvider('OSM', container);
       Osm.search(selected.x, selected.y);
     }
 
     if (E50Settings.get('providers').gis) {
-      let Gis = new GisProvider('2Gis');
-      Gis.container(container);
+      let Gis = new GisProvider('2Gis', container);
+      if (E50Settings.get('maps').gis) {
+        Gis.preview(selected.x, selected.y);
+      }
       Gis.search(selected.x, selected.y);
     }
 
     if (E50Settings.get('providers').yandex) {
-      let Yandex = new YMProvider('Yandex');
-      Yandex.container(container);
+      let Yandex = new YMProvider('Yandex', container);
       Yandex.search(selected.x, selected.y);
     }
 
     if (E50Settings.get('providers').here) {
-      let Here = new HereProvider('Here');
-      Here.container(container);
+      let Here = new HereProvider('Here', container);
       Here.search(selected.x, selected.y);
     }
 
     if (E50Settings.get('providers').bing) {
-      let Bing = new BingProvider('Bing');
-      Bing.container(container);
+      let Bing = new BingProvider('Bing', container);
       Bing.search(selected.x, selected.y);
     }
 
     if (E50Settings.get('providers').google) {
-      let Google = new GPProvider('Google');
-      Google.container(container);
+      let Google = new GPProvider('Google', container);
       Google.search(selected.x, selected.y);
     }
 
@@ -988,8 +1054,8 @@
   }
 
   /**
-   * @param   {string} str
-   * @returns {string}
+   * @param   {String} str
+   * @returns {String}
    */
   function normalizeString(str) {
     // Clear space symbols and double quotes
@@ -1003,8 +1069,8 @@
   }
 
   /**
-   * @param  {string} name
-   * @return {string}
+   * @param  {String} name
+   * @return {String}
    */
   function normalizeName(name) {
     name = normalizeString(name);
@@ -1014,8 +1080,8 @@
   }
 
   /**
-   * @param  {string} city
-   * @return {string}
+   * @param  {String} city
+   * @return {String}
    */
   function normalizeCity(city) {
     city = normalizeString(city);
@@ -1040,8 +1106,8 @@
   }
 
   /**
-   * @param  {string} street
-   * @return {string}
+   * @param  {String} street
+   * @return {String}
    */
   function normalizeStreet(street) {
     street = normalizeString(street);
@@ -1100,16 +1166,16 @@
       types = matches.map(match => match[0].toLowerCase());
     }
     // Filter streets by detected type(s)
-    streets = streets.filter(street => types.some(type => street.indexOf(type) > -1));
-    // Matching without type(s)
+    let filteredStreets = streets.filter(street => types.some(type => street.indexOf(type) > -1));
+    // Matching names without type(s)
     let best = findBestMatch(
       street.replace(reTypes, '').toLowerCase().trim(),
-      streets.map(street => street.replace(reTypes, '').toLowerCase().trim())
+      filteredStreets.map(street => street.replace(reTypes, '').toLowerCase().trim())
     );
     if (best > -1) {
-      street = streets[best];
+      street = filteredStreets[best];
     } else {
-      // TODO: Matching with type
+      // Matching with type
       best = findBestMatch(
         street.toLowerCase().trim(),
         streets.map(street => street.toLowerCase().trim())
@@ -1123,8 +1189,8 @@
   }
 
   /**
-   * @param  {string} number
-   * @return {string}
+   * @param  {String} number
+   * @return {String}
    */
   function normalizeNumber(number) {
     // process "д."
@@ -1230,9 +1296,9 @@
 
   /**
    * @link   https://github.com/aceakash/string-similarity
-   * @param  {string} first
-   * @param  {string} second
-   * @return {number}
+   * @param  {String} first
+   * @param  {String} second
+   * @return {Number}
    */
   function compareTwoStrings(first, second) {
     first = first.replace(/\s+/g, '');
@@ -1267,9 +1333,9 @@
   }
 
   /**
-   * @param  {string} mainString
-   * @param  {string[]} targetStrings
-   * @return {number}
+   * @param  {String} mainString
+   * @param  {String[]} targetStrings
+   * @return {Number}
    */
   function findBestMatch(mainString, targetStrings) {
     let bestMatch = '';
