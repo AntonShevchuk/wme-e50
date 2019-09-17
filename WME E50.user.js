@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         WME E50 Fetch POI Data
-// @version      0.1.1
+// @version      0.1.2
 // @description  Fetch information about the POI from external sources
 // @author       Anton Shevchuk
 // @license      MIT License
@@ -238,13 +238,18 @@
 
     /**
      * Load external JS Map library
-     * @param  {String} script
+     * @param  {String} url
      * @return {Promise<*>}
      */
-    async script(script) {
+    async script(url) {
       // this.map.style.width = E50Settings.get('options', 'modal') ? '236px' : '286px';
       this.map.style.height = E50Settings.get('options', 'modal') ? '236px' : '286px';
-      return await $.getScript(script);
+      return await $.ajax({
+        url: url,
+        cache: true,
+        dataType: 'script',
+        success: () => console.log(NAME, 'Script loaded')
+      });
     }
 
     /**
