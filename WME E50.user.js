@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         WME E50 Fetch POI Data
-// @version      0.1.2
+// @version      0.2.0
 // @description  Fetch information about the POI from external sources
 // @author       Anton Shevchuk
 // @license      MIT License
@@ -14,8 +14,8 @@
 // @icon         data:image/png;base64,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
 // @require      https://greasyfork.org/scripts/389765-common-utils/code/CommonUtils.js?version=731051
 // @require      https://greasyfork.org/scripts/24851-wazewrap/code/WazeWrap.js
-// @require      https://greasyfork.org/scripts/389117-apihelper/code/APIHelper.js?version=729842
-// @require      https://greasyfork.org/scripts/389577-apihelperui/code/APIHelperUI.js?version=730559
+// @require      https://greasyfork.org/scripts/389117-apihelper/code/APIHelper.js?version=733775
+// @require      https://greasyfork.org/scripts/389577-apihelperui/code/APIHelperUI.js?version=733761
 // @require      https://greasyfork.org/scripts/38421-wme-utils-navigationpoint/code/WME%20Utils%20-%20NavigationPoint.js?version=251067
 // @namespace    https://greasyfork.org/users/227648
 // ==/UserScript==
@@ -25,7 +25,7 @@
 (function () {
   'use strict';
 
-  let helper, tab, modal, panel;
+  let helper, tab, modal, panel, mapContainer;
   let vectorLayer, vectorPoint, vectorLine;
 
   const NAME = 'E50';
@@ -54,11 +54,6 @@
         bing: 'Bing',
         here: 'HERE',
         google: 'Google',
-        yandex: 'Yandex',
-      },
-      maps: {
-        title: 'Maps',
-        gis: '2GIS',
         yandex: 'Yandex',
       },
       questions: {
@@ -92,11 +87,6 @@
         google: 'Google',
         yandex: 'Яндекс',
       },
-      maps: {
-        title: 'Карти',
-        gis: '2GIS',
-        yandex: 'Яндекс',
-      },
       questions: {
         changeName: 'Ви впевненні що хочете змінити им\'я?',
         changeCity: 'Ви впевненні що хочете змінити місто?',
@@ -128,11 +118,6 @@
         google: 'Google',
         yandex: 'Яндекс',
       },
-      maps: {
-        title: 'Карты',
-        gis: '2GIS',
-        yandex: 'Яндекс',
-      },
       questions: {
         changeName: 'Ви уверены, что хотите изменить имя?',
         changeCity: 'Ви уверены, что хотите изменить город?',
@@ -158,10 +143,6 @@
       here: true,
       google: true,
       yandex: true,
-    },
-    maps: {
-      gis: false,
-      yandex: false,
     }
   };
 
@@ -200,10 +181,8 @@
       this.response = [];
       // prepare DOM
       this.panel = this._panel();
-      this.map = this._map();
       this.container = container;
       this.container.append(this.panel);
-      this.container.append(this.map);
     }
 
     /**
@@ -234,22 +213,6 @@
       } catch (e) {
         console.error(NAME, this.uid, e);
       }
-    }
-
-    /**
-     * Load external JS Map library
-     * @param  {String} url
-     * @return {Promise<*>}
-     */
-    async script(url) {
-      // this.map.style.width = E50Settings.get('options', 'modal') ? '236px' : '286px';
-      this.map.style.height = E50Settings.get('options', 'modal') ? '236px' : '286px';
-      return await $.ajax({
-        url: url,
-        cache: true,
-        dataType: 'script',
-        success: () => console.log(NAME, 'Script loaded')
-      });
     }
 
     /**
@@ -309,10 +272,6 @@
       if (this.response.length === 0) {
         // remove empty panel
         this.panel.remove();
-        // remove empty map
-        if (this.map.childElementCount === 0) {
-          // this.map.remove();
-        }
         return;
       }
 
@@ -328,17 +287,6 @@
       let div = document.createElement('div');
       div.id = NAME + '-' + this.uid;
       div.className = 'e50';
-      return div;
-    }
-
-    /**
-     * Build div for map
-     * @return {HTMLDivElement}
-     * @protected
-     */
-    _map() {
-      let div = document.createElement('div');
-      div.id = NAME + '-map-' + this.uid;
       return div;
     }
 
@@ -361,7 +309,7 @@
       let legend = document.createElement('legend');
       legend.innerHTML = this.uid + ' [' + this.response.length + ']';
       legend.onclick = function () {
-        $(this).nextAll().toggle();
+        $(this).next().toggle();
         return false;
       };
       fieldset.append(legend, list);
@@ -397,6 +345,9 @@
    * Based on closest segment and city
    */
   class MagicProvider extends Provider {
+    constructor(container) {
+      super('Magic', container);
+    }
     async request(lon, lat) {
       let city = '';
       let street = '';
@@ -433,6 +384,9 @@
    * Open Street Map
    */
   class OsmProvider extends Provider {
+    constructor(container) {
+      super('OSM', container);
+    }
     async request(lon, lat) {
       let url = 'https://nominatim.openstreetmap.org/reverse';
       let data = {
@@ -479,6 +433,9 @@
    * @link http://catalog.api.2gis.ru/doc/2.0/geo/#/default/get_2_0_geo_search
    */
   class GisProvider extends Provider {
+    constructor(container) {
+      super('2Gis', container);
+    }
     async request(lon, lat) {
       let url = 'https://catalog.api.2gis.ru/2.0/geo/search';
       let data = {
@@ -532,23 +489,15 @@
       }
       return element;
     }
-    async preview(lat, lon) {
-      await this.script('https://maps.api.2gis.ru/2.0/loader.js?pkg=basic');
-      DG.then(() =>
-        DG.map(NAME + '-map-' + this.uid, {
-          center: [lon, lat],
-          zoom: W.map.getZoom() + 11,
-          fullscreenControl: false,
-          zoomControl: false
-        })
-      );
-    }
   }
 
   /**
    * Yandex Maps
    */
-  class YMProvider extends Provider {
+  class YandexProvider extends Provider {
+    constructor(container) {
+      super('Yandex', container);
+    }
     async request(lon, lat) {
       let url = 'https://geocode-maps.yandex.ru/1.x/';
       let data = {
@@ -602,16 +551,6 @@
         number
       );
     }
-    async preview(lat, lon) {
-      await this.script('https://api-maps.yandex.ru/2.1/?lang=uk_UA');
-      ymaps.ready(() =>
-        new ymaps.Map(NAME + '-map-' + this.uid, {
-          center: [lon, lat],
-          zoom: W.map.getZoom() + 11,
-          controls: ["zoomControl", "fullscreenControl"]
-        })
-      );
-    }
   }
 
   /**
@@ -619,6 +558,9 @@
    * @link https://developer.here.com/documentation/geocoder/topics/quick-start-geocode.html
    */
   class HereProvider extends Provider {
+    constructor(container) {
+      super('Here', container);
+    }
     async request(lon, lat) {
       let url = 'https://reverse.geocoder.api.here.com/6.2/reversegeocode.json';
       let data = {
@@ -659,6 +601,9 @@
    * http://dev.virtualearth.net/REST/v1/Locations/50.03539,36.34732?o=xml&key=AuBfUY8Y1Nzf3sRgceOYxaIg7obOSaqvs0k5dhXWfZyFpT9ArotYNRK7DQ_qZqZw&c=uk&includeEntityTypes=Address
    */
   class BingProvider extends Provider {
+    constructor(container) {
+      super('Bing', container);
+    }
     async request(lon, lat) {
       let url = 'https://dev.virtualearth.net/REST/v1/Locations/' + lat + ',' + lon;
       let data = {
@@ -694,7 +639,10 @@
    * Google Place
    * @link https://developers.google.com/places/web-service/search
    */
-  class GPProvider extends Provider {
+  class GoogleProvider extends Provider {
+    constructor(container) {
+      super('Google', container);
+    }
     async request(lon, lat) {
       let url = 'https://' + location.hostname + '/maps/api/place/nearbysearch/json';
       let data = {
@@ -776,15 +724,6 @@
     }
     tab.addElement(fsProviders);
 
-    // Setup providers map settings
-    let fsMaps = helper.createFieldset(I18n.t(NAME).maps.title);
-    let maps = E50Settings.get('maps');
-    for (let item in maps) {
-      fsMaps.addCheckbox('maps-' + item, I18n.t(NAME).maps[item], I18n.t(NAME).maps[item], function (event) {
-        E50Settings.set(['maps', item], event.target.checked);
-      }, E50Settings.get('maps', item));
-    }
-    tab.addElement(fsMaps);
     tab.inject();
 
     // Shortcut for copy POI data to clipboard
@@ -868,43 +807,37 @@
     selected.transform('EPSG:900913', 'EPSG:4326');
 
     if (E50Settings.get('providers').magic) {
-      let Magic = new MagicProvider('Magic', container);
+      let Magic = new MagicProvider(container);
       Magic.search(selected.x, selected.y);
     }
 
     if (E50Settings.get('providers').osm) {
-      let Osm = new OsmProvider('OSM', container);
+      let Osm = new OsmProvider(container);
       Osm.search(selected.x, selected.y);
     }
 
     if (E50Settings.get('providers').gis) {
-      let Gis = new GisProvider('2Gis', container);
-      if (E50Settings.get('maps').gis) {
-        Gis.preview(selected.x, selected.y);
-      }
+      let Gis = new GisProvider(container);
       Gis.search(selected.x, selected.y);
     }
 
     if (E50Settings.get('providers').yandex) {
-      let Yandex = new YMProvider('Yandex', container);
-      if (E50Settings.get('maps').yandex) {
-        Yandex.preview(selected.x, selected.y);
-      }
+      let Yandex = new YandexProvider(container);
       Yandex.search(selected.x, selected.y);
     }
 
     if (E50Settings.get('providers').here) {
-      let Here = new HereProvider('Here', container);
+      let Here = new HereProvider(container);
       Here.search(selected.x, selected.y);
     }
 
     if (E50Settings.get('providers').bing) {
-      let Bing = new BingProvider('Bing', container);
+      let Bing = new BingProvider(container);
       Bing.search(selected.x, selected.y);
     }
 
     if (E50Settings.get('providers').google) {
-      let Google = new GPProvider('Google', container);
+      let Google = new GoogleProvider(container);
       Google.search(selected.x, selected.y);
     }
 
@@ -1354,7 +1287,6 @@
         intersectionSize++;
       }
     }
-
     return (2.0 * intersectionSize) / (first.length + second.length - 2);
   }
 

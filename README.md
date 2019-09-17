@@ -1,6 +1,8 @@
 # WME E50
 Fetch information about the POI from external sources
 
+![](screenshot.png)
+
 ## Links
 Author homepage: http://anton.shevchuk.name/  
 Script homepage: https://github.com/AntonShevchuk/wme-e50/  
