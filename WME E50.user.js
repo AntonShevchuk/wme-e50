@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         WME E50 Fetch POI Data
-// @version      0.2.1
+// @version      0.2.2
 // @description  Fetch information about the POI from external sources
 // @author       Anton Shevchuk
 // @license      MIT License
@@ -1056,11 +1056,9 @@
     // Get list of all available cities
     let cities = W.model.cities.getObjectArray().filter(m => m.attributes.name !== null && m.attributes.name !== '').map(m => m.attributes.name);
 
-    // Remove text in the "( )", Waze puts region name to the pair brackets
-    cities = cities.map(city => city.replace(/( ?\(.*\))/gi, ''));
-
     // More than one city, use city with best matching score
-    let best = findBestMatch(city, cities);
+    // Remove text in the "( )", Waze puts region name to the pair brackets
+    let best = findBestMatch(city, cities.map(city => city.replace(/( ?\(.*\))/gi, '')));
     if (best > -1) {
       city = cities[best];
     }
