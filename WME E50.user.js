@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         WME E50 Fetch POI Data
-// @version      0.2.2
+// @version      0.2.3
 // @description  Fetch information about the POI from external sources
 // @author       Anton Shevchuk
 // @license      MIT License
@@ -165,7 +165,6 @@
 
   );
 
-  // let WazeActionMultiAction = require('Waze/Action/MultiAction');
   let WazeActionUpdateObject = require('Waze/Action/UpdateObject');
   let WazeActionUpdateFeatureAddress = require('Waze/Action/UpdateFeatureAddress');
 
@@ -374,7 +373,7 @@
           city ? city : '',
           street ? street : '',
           '',
-          city
+          ''
         )
       ];
     }
@@ -901,9 +900,10 @@
       // Update alias for korpus
       if ((new RegExp('[0-9]+[а-яі]?к[0-9]+', 'i')).test(number)) {
         let alias = number.replace('к', ' корпус ');
-        if (poi.attributes.aliases.indexOf(alias) === -1) {
-          poi.attributes.aliases.push(alias);
-          W.model.actionManager.add(new WazeActionUpdateObject(poi, {aliases: poi.attributes.aliases}));
+        let aliases = poi.attributes.aliases.slice();
+        if (aliases.indexOf(alias) === -1) {
+          aliases.push(alias);
+          W.model.actionManager.add(new WazeActionUpdateObject(poi, {aliases: aliases}));
         }
       }
     }
@@ -992,28 +992,6 @@
     if (newName || newHN || newStreet || newCity) {
       W.selectionManager.setSelectedModels([poi]);
     }
-
-    // TODO: rewrite it to use multiAction
-    /*
-    let address = {
-      countryID: W.model.getTopCountry().getID(),
-      stateID: W.model.getTopState().getID(),
-      cityName: poi.getAddress().getCityName(),
-      streetName: poi.getAddress().getStreetName(),
-      houseNumber: number,
-    };
-    // Check city
-    address.emptyCity = (address.cityName === null);
-    // Check street
-    address.emptyStreet = (address.streetName === null) || (address.streetName === '');
-
-    let multiAction = new WazeActionMultiAction();
-        multiAction.setModel(W.model);
-
-    multiAction.doSubAction(new WazeActionUpdateFeatureAddress(poi, address, {updateHouseNumber: true}));
-    multiAction.doSubAction(new WazeActionUpdateObject(poi, {houseNumber: number}));
-    W.model.actionManager.add(multiAction);
-    */
   }
 
   /**
