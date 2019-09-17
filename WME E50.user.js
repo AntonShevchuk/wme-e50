@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         WME E50 Fetch POI Data
-// @version      0.2.0
+// @version      0.2.1
 // @description  Fetch information about the POI from external sources
 // @author       Anton Shevchuk
 // @license      MIT License
@@ -25,7 +25,7 @@
 (function () {
   'use strict';
 
-  let helper, tab, modal, panel, mapContainer;
+  let helper, tab, modal, panel;
   let vectorLayer, vectorPoint, vectorLine;
 
   const NAME = 'E50';
@@ -33,7 +33,7 @@
   // translation structure
   const TRANSLATION = {
     'en': {
-      title: 'Information',
+      title: 'Information 📍',
       notFound: 'Not found',
       description: {
         copyData: 'Copy name and address of the selected POI to clipboard',
@@ -64,7 +64,7 @@
       }
     },
     'uk': {
-      title: 'Інформація',
+      title: 'Інформація 📍',
       notFound: 'Нічого не знайдено',
       description: {
         copyData: 'Копіювати до буферу обміну назву та адресу обраного POI',
@@ -95,7 +95,7 @@
       }
     },
     'ru': {
-      title: 'Информация',
+      title: 'Информация 📍',
       notFound: 'Ничего не найдено',
       description: {
         copyData: 'Копировать в буфер обмена название и адрес выбранного POI',
@@ -702,15 +702,17 @@
 
     panel = helper.createPanel(I18n.t(NAME).title);
 
-    tab = helper.createTab(NAME + ': ' + I18n.t(NAME).title);
+    tab = helper.createTab(I18n.t(NAME).title);
 
     // Setup options
     let fsOptions = helper.createFieldset(I18n.t(NAME).options.title);
     let options = E50Settings.get('options');
     for (let item in options) {
-      fsOptions.addCheckbox(item, I18n.t(NAME).options[item], I18n.t(NAME).options[item], function (event) {
-        E50Settings.set(['options', item], event.target.checked);
-      }, E50Settings.get('options', item));
+      if (options.hasOwnProperty(item)) {
+        fsOptions.addCheckbox(item, I18n.t(NAME).options[item], I18n.t(NAME).options[item], function (event) {
+          E50Settings.set(['options', item], event.target.checked);
+        }, E50Settings.get('options', item));
+      }
     }
     tab.addElement(fsOptions);
 
@@ -718,9 +720,11 @@
     let fsProviders = helper.createFieldset(I18n.t(NAME).providers.title);
     let providers = E50Settings.get('providers');
     for (let item in providers) {
-      fsProviders.addCheckbox(item, I18n.t(NAME).providers[item], I18n.t(NAME).providers[item], function (event) {
-        E50Settings.set(['providers', item], event.target.checked);
-      }, E50Settings.get('providers', item));
+      if (providers.hasOwnProperty(item)) {
+        fsProviders.addCheckbox(item, I18n.t(NAME).providers[item], I18n.t(NAME).providers[item], function (event) {
+          E50Settings.set(['providers', item], event.target.checked);
+        }, E50Settings.get('providers', item));
+      }
     }
     tab.addElement(fsProviders);
 
