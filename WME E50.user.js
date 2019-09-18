@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         WME E50 Fetch POI Data
-// @version      0.2.3
+// @version      0.2.4
 // @description  Fetch information about the POI from external sources
 // @author       Anton Shevchuk
 // @license      MIT License
@@ -361,7 +361,7 @@
         let cities = W.model.cities.getObjectArray().filter(m => m.attributes.name !== null && m.attributes.name !== '').map(m => m.attributes.name);
         city = cities.length ? cities[0] : '';
       }
-      if (!city && !street) {
+      if (!street) {
         return [];
       }
 
@@ -371,7 +371,7 @@
           lon,
           lat,
           city ? city : '',
-          street ? street : '',
+          street,
           '',
           ''
         )
