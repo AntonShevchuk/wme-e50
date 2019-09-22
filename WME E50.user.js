@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         WME E50 Fetch POI Data
-// @version      0.2.4
+// @version      0.2.5
 // @description  Fetch information about the POI from external sources
 // @author       Anton Shevchuk
 // @license      MIT License
@@ -1001,7 +1001,7 @@
   function normalizeString(str) {
     // Clear space symbols and double quotes
     str = str.trim()
-      .replace(/["“]/g, '')
+      .replace(/["“”]/g, '')
       .replace(/\s{2,}/g, ' ')
     ;
     // Clear accents/diacritics, but "\u0306" needed for "й"
