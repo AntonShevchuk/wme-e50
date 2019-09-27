@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         WME E50 Fetch POI Data
-// @version      0.2.5
+// @version      0.2.6
 // @description  Fetch information about the POI from external sources
 // @author       Anton Shevchuk
 // @license      MIT License
@@ -649,7 +649,7 @@
         radius: 40,
         fields: 'geometry,formatted_address',
         types: 'point_of_interest',
-        language: 'ua',
+        language: 'uk',
         key: 'AIzaSy' + 'CebbES' + 'rWERY1MRZ56gEAfpt7tK2R6hV_I', // extract it from WME
       };
       let response = await $.ajax({
