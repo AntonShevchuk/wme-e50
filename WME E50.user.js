@@ -15,7 +15,7 @@
 // @require      https://greasyfork.org/scripts/389765-common-utils/code/CommonUtils.js?version=731051
 // @require      https://greasyfork.org/scripts/24851-wazewrap/code/WazeWrap.js
 // @require      https://greasyfork.org/scripts/389117-apihelper/code/APIHelper.js?version=733775
-// @require      https://greasyfork.org/scripts/389577-apihelperui/code/APIHelperUI.js?version=733761
+// @require      https://greasyfork.org/scripts/389577-apihelperui/code/APIHelperUI.js?version=734620
 // @require      https://greasyfork.org/scripts/38421-wme-utils-navigationpoint/code/WME%20Utils%20-%20NavigationPoint.js?version=251067
 // @namespace    https://greasyfork.org/users/227648
 // ==/UserScript==
@@ -793,11 +793,16 @@
   function landmarkPanel(event, element) {
     let container, parent;
     if (E50Settings.get('options', 'modal')) {
-      parent = modal.toHTML();
+      parent = modal.html();
       container = parent.querySelector('.body');
     } else {
-      parent = panel.toHTML();
+      parent = panel.html();
       container = parent.querySelector('.controls');
+    }
+
+    // Clear container
+    while (container.hasChildNodes()) {
+      container.removeChild(container.lastChild);
     }
 
     let poi = getSelectedPOI();
