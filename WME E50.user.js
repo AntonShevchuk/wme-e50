@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         WME E50 Fetch POI Data
-// @version      0.3.1
+// @version      0.3.2
 // @description  Fetch information about the POI from external sources
 // @author       Anton Shevchuk
 // @license      MIT License
@@ -21,7 +21,19 @@
 // ==/UserScript==
 
 /* jshint esversion: 8 */
-/* global require, $, window, console, W, I18n, OL, APIHelper, APIHelperUI, WazeWrap, NavigationPoint, Cache, Settings */
+/* global window */
+/* global console */
+/* global require */
+/* global $ */
+/* global W */
+/* global I18n */
+/* global OL */
+/* global APIHelper */
+/* global APIHelperUI */
+/* global WazeWrap */
+/* global NavigationPoint */
+/* global Cache */
+/* global Settings */
 (function () {
   'use strict';
 
@@ -164,8 +176,8 @@
     '.e50 div.controls:empty::after, #panel-container .archive-panel .body:empty::after { color: #ccc; content: "' + I18n.t(NAME).notFound + '" }'
   );
 
-  let WazeActionUpdateObject = require('Waze/Action/UpdateObject');
-  let WazeActionUpdateFeatureAddress = require('Waze/Action/UpdateFeatureAddress');
+  let WazeActionUpdateObject;
+  let WazeActionUpdateFeatureAddress;
 
   let E50Cache = new Cache();
   let E50Settings = new Settings(NAME, settings);
@@ -694,6 +706,9 @@
   $(window).on('beforeunload', () => E50Settings.save());
 
   function ready() {
+    WazeActionUpdateObject = require('Waze/Action/UpdateObject');
+    WazeActionUpdateFeatureAddress = require('Waze/Action/UpdateFeatureAddress');
+
     helper = new APIHelperUI(NAME);
 
     modal = helper.createModal(I18n.t(NAME).title);
