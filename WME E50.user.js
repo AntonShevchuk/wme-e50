@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         WME E50 Fetch POI Data
-// @version      0.3.2
+// @version      0.3.3
 // @description  Fetch information about the POI from external sources
 // @author       Anton Shevchuk
 // @license      MIT License
@@ -26,13 +26,14 @@
 /* global require */
 /* global $ */
 /* global W */
-/* global I18n */
 /* global OL */
+/* global I18n */
+/* global WazeWrap */
 /* global APIHelper */
 /* global APIHelperUI */
-/* global WazeWrap */
 /* global NavigationPoint */
 /* global Cache */
+/* global Tools */
 /* global Settings */
 (function () {
   'use strict';
@@ -537,6 +538,7 @@
       let lon = center[0];
       let lat = center[1];
       let city = '';
+      let district = '';
       let street = '';
       let number = '';
       if (res.metaDataProperty.GeocoderMetaData.Address.Components) {
@@ -545,12 +547,18 @@
           if (component.kind === 'locality') {
             city = component.name;
           }
+          if (component.kind === 'district') {
+            district = component.name;
+          }
           if (component.kind === 'street') {
             street = component.name;
           }
           if (component.kind === 'house') {
             number = component.name;
           }
+        }
+        if (street === '' && district !== '') {
+          street = district; // sometimes it works
         }
       }
       return this.element(
