@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         WME E50 Fetch POI Data
-// @version      0.3.3
+// @version      0.4.0
 // @description  Fetch information about the POI from external sources
 // @author       Anton Shevchuk
 // @license      MIT License
@@ -68,6 +68,7 @@
         here: 'HERE',
         google: 'Google',
         yandex: 'Yandex',
+        visicom: 'Visicom',
       },
       questions: {
         changeName: 'Are you sure to change the name?',
@@ -99,6 +100,7 @@
         here: 'HERE',
         google: 'Google',
         yandex: 'Яндекс',
+        visicom: 'Візіком',
       },
       questions: {
         changeName: 'Ви впевненні що хочете змінити им\'я?',
@@ -130,6 +132,7 @@
         here: 'HERE',
         google: 'Google',
         yandex: 'Яндекс',
+        visicom: 'Визиком',
       },
       questions: {
         changeName: 'Ви уверены, что хотите изменить имя?',
@@ -156,6 +159,7 @@
       here: true,
       google: true,
       yandex: true,
+      visicom: false,
     }
   };
 
@@ -388,6 +392,51 @@
           ''
         )
       ];
+    }
+  }
+
+  /**
+   * visicom.ua
+   */
+  class VisicomProvider extends Provider {
+    constructor(container) {
+      super('Visicom', container);
+    }
+    async request(lon, lat) {
+      let url = 'https://api.visicom.ua/data-api/4.0/uk/search/adr_address.json';
+      let data = {
+        near: lon +','+lat,
+        radius: 50,
+        key: 'da'+'0110'+'e25fac44b1b9c849296387dba8',
+      };
+      let response = await $.ajax({
+        dataType: 'json',
+        cache: false,
+        url: url,
+        data: data
+      });
+      if (response.features && response.features.length) {
+        return this.collection(response.features);
+      } else {
+        return [];
+      }
+    }
+
+    item(res) {
+      console.log(res);
+      let city = '';
+      let street = '';
+      let number = '';
+      if (res.properties.settlement) {
+        city = res.properties.settlement;
+      }
+      if (res.properties.street) {
+        street = res.properties.street_type + ' ' + res.properties.street;
+      }
+      if (res.properties.name) {
+        number = res.properties.name;
+      }
+      return this.element(res.geo_centroid.coordinates[0], res.geo_centroid.coordinates[1], city, street, number);
     }
   }
 
@@ -853,6 +902,11 @@
     if (E50Settings.get('providers').gis) {
       let Gis = new GisProvider(container);
       Gis.search(selected.x, selected.y);
+    }
+
+    if (E50Settings.get('providers').visicom) {
+      let Visicom = new VisicomProvider(container);
+      Visicom.search(selected.x, selected.y);
     }
 
     if (E50Settings.get('providers').yandex) {
