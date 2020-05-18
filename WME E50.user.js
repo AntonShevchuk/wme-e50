@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         WME E50 Fetch POI Data
-// @version      0.4.0
+// @version      0.4.1
 // @description  Fetch information about the POI from external sources
 // @author       Anton Shevchuk
 // @license      MIT License
@@ -279,7 +279,7 @@
         raw: raw,
       };
     }
-    
+
     /**
      * Render result to target element
      */
@@ -477,6 +477,8 @@
       let number = '';
       if (res.address.city) {
         city = res.address.city;
+      } else if (res.address.town) {
+        city = res.address.town;
       }
       if (res.address.road) {
         street = res.address.road;
@@ -932,8 +934,8 @@
     if (E50Settings.get('options', 'modal')) {
       if (E50Settings.get('options', 'transparent')) {
         parent.style.opacity = 0.6;
-        parent.onmouseover = () => parent.style.opacity = 1;
-        parent.onmouseout = () => parent.style.opacity = 0.6;
+        parent.onmouseover = () => (parent.style.opacity = 1);
+        parent.onmouseout = () => (parent.style.opacity = 0.6);
       }
       modal.container().append(parent);
     } else {
