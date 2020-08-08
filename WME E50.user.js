@@ -139,8 +139,40 @@
         changeStreet: 'Ви уверены, что хотите изменить улицу?',
         changeNumber: 'Ви уверены, что хотите изменить номер дома?',
       }
-    }
-  };
+    },
+     'fr': {
+      title: 'Informations 📍',
+      notFound: 'Lieu inconnu',
+      description: {
+        copyData: 'Copier le nom et l\'adresse du POI dans le presse-papier',
+      },
+      options: {
+        title: 'Réglages',
+        modal: 'Activer la fenêtre',
+        transparent: 'Fenêtre transparente',
+        entryPoint: 'Créer le point d\'entrée s\'il n\'existe pas',
+        copyData: "Copier les informations du POI en cliquant",
+        lock: 'Verrouiller le POI au niveau 2',
+      },
+      providers: {
+        title: 'Sources',
+        magic: 'Au plus proche du segment',
+        osm: 'Open Street Map',
+        gis: '2GIS',
+        bing: 'Bing',
+        here: 'HERE',
+        google: 'Google',
+        yandex: 'Yandex',
+        visicom: 'Visicom',
+      },
+      questions: {
+        changeName: 'Êtes-vous sûr de changer le nom ?',
+        changeCity: 'Êtes-vous sûr de changer la ville ?',
+        changeStreet: 'Êtes-vous sûr de changer la rue ?',
+        changeNumber: 'Êtes-vous sûr de changer le numéro de rue ?',
+      }
+     }
+    };
 
   const settings = {
     options: {
