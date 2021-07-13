@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         WME E50 Fetch POI Data
-// @version      0.5.1
+// @version      0.5.2
 // @description  Fetch information about the POI from external sources
 // @author       Anton Shevchuk
 // @license      MIT License
@@ -1029,29 +1029,6 @@
       W.model.actionManager.add(new WazeActionUpdateObject(poi, {name: newName}));
     }
 
-    // POI Address HouseNumber
-    let newHN;
-    let addressHN = poi.getAddress().attributes.houseNumber;
-    if (number) {
-      // Normalize «korpus»
-      number = number.replace(/^(\d+)к(\d+)$/i, '$1-$2');
-      // Check number for invalid format for Waze
-      if ((new RegExp('^[0-9]+[а-яі][к|/][0-9]+$', 'i')).test(number)) {
-        // Skip this step
-        console.log(NAME, 'skipped «' + number + '»');
-      } else if (addressHN) {
-        if (addressHN !== number &&
-          window.confirm(I18n.t(NAME).questions.changeNumber + '\n«' + addressHN + '» ⟶ «' + number + '»?')) {
-          newHN = number;
-        }
-      } else {
-        newHN = number;
-      }
-      if (newHN) {
-        W.model.actionManager.add(new WazeActionUpdateObject(poi, {houseNumber: newHN}));
-      }
-    }
-
     // POI Address Street Name
     let newStreet;
     let addressStreet = poi.getAddress().getStreet() ? poi.getAddress().getStreet().name : '';
@@ -1087,6 +1064,29 @@
         streetName: newStreet ? newStreet : poi.getAddress().getStreetName()
       };
       W.model.actionManager.add(new WazeActionUpdateFeatureAddress(poi, address));
+    }
+
+    // POI Address HouseNumber
+    let newHN;
+    let addressHN = poi.getAddress().attributes.houseNumber;
+    if (number) {
+      // Normalize «korpus»
+      number = number.replace(/^(\d+)к(\d+)$/i, '$1-$2');
+      // Check number for invalid format for Waze
+      if ((new RegExp('^[0-9]+[а-яі][к|/][0-9]+$', 'i')).test(number)) {
+        // Skip this step
+        console.log(NAME, 'skipped «' + number + '»');
+      } else if (addressHN) {
+        if (addressHN !== number &&
+            window.confirm(I18n.t(NAME).questions.changeNumber + '\n«' + addressHN + '» ⟶ «' + number + '»?')) {
+          newHN = number;
+        }
+      } else {
+        newHN = number;
+      }
+      if (newHN) {
+        W.model.actionManager.add(new WazeActionUpdateObject(poi, {houseNumber: newHN}));
+      }
     }
 
     // If no entry point we would create it
