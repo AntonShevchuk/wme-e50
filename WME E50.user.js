@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         WME E50 Fetch POI Data
-// @version      0.5.2
+// @version      0.5.3
 // @description  Fetch information about the POI from external sources
 // @author       Anton Shevchuk
 // @license      MIT License
@@ -191,6 +191,26 @@
       google: true,
       yandex: true,
       visicom: false,
+    },
+    region: {
+      // Belarus
+      37: {
+        country: 'by',
+        language: 'ru',
+        locale: 'ru_RU'
+      },
+      // Russian Federation
+      186: {
+        country: 'ru',
+        language: 'ru',
+        locale: 'ru_RU'
+      },
+      // Ukraine
+      232: {
+        country: 'uk',
+        language: 'ua',
+        locale: 'uk_UA'
+      }
     }
   };
 
@@ -217,6 +237,8 @@
 
   let E50Cache = new SimpleCache();
   let E50Settings = new Settings(NAME, settings);
+
+  let country = 232; // default is Ukraine
 
   /**
    * Basic Provider class
@@ -485,8 +507,8 @@
         lat: lat,
         zoom: 18,
         addressdetails: 1,
-        countrycodes: 'ua',
-        'accept-language': 'uk_UA',
+        countrycodes: settings.region[country]['language'],
+        'accept-language': settings.region[country]['locale'],
         format: 'json',
       };
       let response = await $.ajax({
@@ -536,7 +558,7 @@
         radius: 20,
         type: 'building',
         fields: 'items.address,items.adm_div,items.geometry.centroid',
-        locale: 'uk_UA',
+        locale: settings.region[country]['locale'],
         format: 'json',
         key: 'rubnkm' + '7490',
       };
@@ -597,7 +619,7 @@
         geocode: lon + ',' + lat,
         kind: 'house',
         results: 2,
-        lang: 'uk_UA',
+        lang: settings.region[country]['locale'],
         format: 'json',
         apikey: '2fe62c0e' + '-580f-4541-b325-' + '7c896d8d9481',
       };
@@ -708,7 +730,7 @@
       let url = 'https://dev.virtualearth.net/REST/v1/Locations/' + lat + ',' + lon;
       let data = {
         includeEntityTypes: 'Address',
-        c: 'uk',
+        c: settings.region[country]['country'],
         key: 'AuBfUY8Y1Nzf' + '3sRgceOYxaIg7obOSaqvs' + '0k5dhXWfZyFpT9ArotYNRK7DQ_qZqZw',
       };
       let response = await $.ajax({
@@ -750,7 +772,7 @@
         radius: 40,
         fields: 'geometry,formatted_address',
         types: 'point_of_interest',
-        language: 'uk',
+        language: settings.region[country]['country'],
         key: 'AIzaSy' + 'CebbES' + 'rWERY1MRZ56gEAfpt7tK2R6hV_I', // extract it from WME
       };
       let response = await $.ajax({
@@ -865,7 +887,9 @@
       displayInLayerSwitcher: false,
       uniqueName: "__E50VectorLayer"
     });
+
     W.map.addLayer(vectorLayer);
+    country = W.model.getTopCountry().getID();
   }
 
   /**
