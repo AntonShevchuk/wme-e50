@@ -256,9 +256,7 @@
           responseType: 'json',
           url: url,
           onload: function(response) {
-
-            console.log(NAME, uid, url, response.response);
-
+            // console.log(NAME, uid, url, response.response);
             resolve(response.response);
           },
           onerror: function(error) {
