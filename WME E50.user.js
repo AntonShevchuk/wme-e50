@@ -1,14 +1,17 @@
 // ==UserScript==
 // @name         WME E50 Fetch POI Data
-// @version      0.6.0
+// @version      0.6.2
 // @description  Fetch information about the POI from external sources
 // @author       Anton Shevchuk
 // @license      MIT License
 // @grant        GM.xmlHttpRequest
+// @grant        GM.setClipboard
+// @grant        GM.setValue
+// @grant        GM.getValue
 // @connect      api.here.com
 // @connect      api.visicom.ua
 // @connect      nominatim.openstreetmap.org
-// @connect      catalog.api.2gis.ru
+// @connect      catalog.api.2gis.ua
 // @connect      dev.virtualearth.net
 // @match        https://www.waze.com/editor*
 // @match        https://www.waze.com/*/editor*
@@ -17,16 +20,15 @@
 // @exclude      https://www.waze.com/user/editor*
 // @exclude      https://beta.waze.com/user/editor*
 // @icon         data:image/png;base64,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
-// @require      https://greasyfork.org/scripts/389765-common-utils/code/CommonUtils.js?version=822474
-// @require      https://greasyfork.org/scripts/389117-apihelper/code/APIHelper.js?version=837602
-// @require      https://greasyfork.org/scripts/389577-apihelperui/code/APIHelperUI.js?version=1060809
+// @require      https://greasyfork.org/scripts/389765-common-utils/code/CommonUtils.js?version=1082812
+// @require      https://greasyfork.org/scripts/389117-apihelper/code/APIHelper.js?version=1082818
+// @require      https://greasyfork.org/scripts/389577-apihelperui/code/APIHelperUI.js?version=1082967
 // @require      https://greasyfork.org/scripts/38421-wme-utils-navigationpoint/code/WME%20Utils%20-%20NavigationPoint.js?version=251067
 // @namespace    https://greasyfork.org/users/227648
 // ==/UserScript==
 
 /* jshint esversion: 8 */
 /* global require */
-/* global GM */
 /* global $ */
 /* global W */
 /* global OpenLayers */
@@ -37,14 +39,15 @@
 /* global SimpleCache */
 /* global Tools */
 /* global Settings */
+
 (function () {
-  'use strict';
+  'use strict'
 
-  let helper, tab, modal, panel;
-  let vectorLayer, vectorPoint, vectorLine;
-  let OL = OpenLayers;
+  let helper, tab, modal, panel
+  let vectorLayer, vectorPoint, vectorLine
+  let OL = OpenLayers
 
-  const NAME = 'E50';
+  const NAME = 'E50'
 
   // translation structure
   const TRANSLATION = {
@@ -141,7 +144,7 @@
         changeNumber: 'Ви уверены, что хотите изменить номер дома?',
       }
     },
-     'fr': {
+    'fr': {
       title: 'Informations 📍',
       notFound: 'Lieu inconnu',
       description: {
@@ -152,7 +155,7 @@
         modal: 'Activer la fenêtre',
         transparent: 'Fenêtre transparente',
         entryPoint: 'Créer le point d\'entrée s\'il n\'existe pas',
-        copyData: "Copier les informations du POI en cliquant",
+        copyData: 'Copier les informations du POI en cliquant',
         lock: 'Verrouiller le POI au niveau 2',
       },
       providers: {
@@ -171,8 +174,8 @@
         changeStreet: 'Êtes-vous sûr de changer la rue ?',
         changeNumber: 'Êtes-vous sûr de changer le numéro de rue ?',
       }
-     }
-    };
+    }
+  }
 
   const settings = {
     options: {
@@ -199,11 +202,11 @@
         locale: 'uk_UA'
       }
     }
-  };
+  }
 
   // OpenLayer styles
-  APIHelper.bootstrap();
-  APIHelper.addTranslation(NAME, TRANSLATION);
+  APIHelper.bootstrap()
+  APIHelper.addTranslation(NAME, TRANSLATION)
   APIHelper.addStyle(
     '.e50 legend { cursor:pointer; font-size: 12px; font-weight: bold; width: auto; text-align: right; border: 0; margin: 0; padding: 0 8px; }' +
     '.e50 fieldset { border: 1px solid #ddd; padding: 4px; }' +
@@ -217,27 +220,27 @@
     '#panel-container .archive-panel .body { overflow-x: auto; max-height: 420px; }' +
     '.e50 div.controls:empty, #panel-container .archive-panel .body:empty { min-height: 20px; }' +
     '.e50 div.controls:empty::after, #panel-container .archive-panel .body:empty::after { color: #ccc; content: "' + I18n.t(NAME).notFound + '" }'
-  );
+  )
 
-  let WazeActionUpdateObject;
-  let WazeActionUpdateFeatureAddress;
+  let WazeActionUpdateObject
+  let WazeActionUpdateFeatureAddress
 
-  let E50Cache = new SimpleCache();
-  let E50Settings = new Settings(NAME, settings);
+  let E50Cache = new SimpleCache()
+  let E50Settings = new Settings(NAME, settings)
 
-  let country = 232; // default is Ukraine
+  let country = 232 // W.model.getTopCountry().getID() // default is Ukraine
 
   /**
    * Basic Provider class
    */
   class Provider {
-    constructor(uid, container) {
-      this.uid = uid;
-      this.response = [];
+    constructor (uid, container) {
+      this.uid = uid
+      this.response = []
       // prepare DOM
-      this.panel = this._panel();
-      this.container = container;
-      this.container.append(this.panel);
+      this.panel = this._panel()
+      this.container = container
+      this.container.append(this.panel)
     }
 
     /**
@@ -245,33 +248,34 @@
      * @param {Object} data
      * @returns {Promise<unknown>}
      */
-    makeRequest(url, data) {
-      url += '?';
-      url += new URLSearchParams(data).toString();
-      let uid = this.uid;
+    makeRequest (url, data) {
+      url += '?'
+      url += new URLSearchParams(data).toString()
+      let uid = this.uid
 
       return new Promise((resolve, reject) => {
         GM.xmlHttpRequest({
           method: 'GET',
           responseType: 'json',
           url: url,
-          onload: function(response) {
+          onload: function (response) {
             // console.log(NAME, uid, url, response.response);
-            resolve(response.response);
+            resolve(response.response)
           },
-          onerror: function(error) {
-            reject(error);
+          onerror: function (error) {
+            reject(error)
           }
-        });
-      });
+        })
+      })
     }
+
     /**
      * @param  {Number} lon
      * @param  {Number} lat
      * @return {Promise<array>}
      */
-    async request(lon, lat) {
-      throw new Error('Abstract method');
+    async request (lon, lat) {
+      throw new Error('Abstract method')
     }
 
     /**
@@ -279,19 +283,19 @@
      * @param  {Number} lat
      * @return {Promise<void>}
      */
-    async search(lon, lat) {
+    async search (lon, lat) {
       try {
-        let key = this.uid + ':' + lon + ',' + lat;
+        let key = this.uid + ':' + lon + ',' + lat
         if (E50Cache.has(key)) {
-          this.response = E50Cache.get(key);
+          this.response = E50Cache.get(key)
         } else {
-          this.response = await this.request(lon, lat);
-          E50Cache.set(key, this.response);
+          this.response = await this.request(lon, lat)
+          E50Cache.set(key, this.response)
         }
-        console.log(NAME, this.uid, this.response);
-        this.render();
+        console.log(NAME, this.uid, this.response)
+        this.render()
       } catch (e) {
-        console.error(NAME, this.uid, e);
+        console.error(NAME, this.uid, e)
       }
     }
 
@@ -299,12 +303,12 @@
      * @param  {Array} res
      * @return {Array}
      */
-    collection(res) {
-      let result = [];
+    collection (res) {
+      let result = []
       for (let i = 0; i < res.length; i++) {
-        result.push(this.item(res[i]));
+        result.push(this.item(res[i]))
       }
-      return result;
+      return result
     }
 
     /**
@@ -312,8 +316,8 @@
      * @param  {Object} res
      * @return {Object}
      */
-    item(res) {
-      throw new Error('Abstract method');
+    item (res) {
+      throw new Error('Abstract method')
     }
 
     /**
@@ -325,14 +329,14 @@
      * @param  {String} name
      * @return {{number: *, city: *, street: *, name: *, raw: *, lon: *, title: *, lat: *}}
      */
-    element(lon, lat, city, street, number, name = '') {
+    element (lon, lat, city, street, number, name = '') {
       // Raw data from provider
-      let raw = [street, number, name].filter(x => !!x).join(', ');
-      city = normalizeCity(city);
-      street = normalizeStreet(street);
-      number = normalizeNumber(number);
-      name = normalizeName(name);
-      let title = [street, number, name].filter(x => !!x).join(', ');
+      let raw = [street, number, name].filter(x => !!x).join(', ')
+      city = normalizeCity(city)
+      street = normalizeStreet(street)
+      number = normalizeNumber(number)
+      name = normalizeName(name)
+      let title = [street, number, name].filter(x => !!x).join(', ')
       return {
         lat: lat,
         lon: lon,
@@ -342,20 +346,20 @@
         name: name,
         title: title,
         raw: raw,
-      };
+      }
     }
 
     /**
      * Render result to target element
      */
-    render() {
+    render () {
       if (this.response.length === 0) {
         // remove empty panel
-        this.panel.remove();
-        return;
+        this.panel.remove()
+        return
       }
 
-      this.panel.append(this._fieldset());
+      this.panel.append(this._fieldset())
     }
 
     /**
@@ -363,11 +367,11 @@
      * @return {HTMLDivElement}
      * @private
      */
-    _panel() {
-      let div = document.createElement('div');
-      div.id = NAME + '-' + this.uid;
-      div.className = 'e50';
-      return div;
+    _panel () {
+      let div = document.createElement('div')
+      div.id = NAME + '-' + this.uid
+      div.className = 'e50'
+      return div
     }
 
     /**
@@ -375,25 +379,25 @@
      * @return {HTMLFieldSetElement}
      * @protected
      */
-    _fieldset() {
-      let fieldset = document.createElement('fieldset');
-      let list = document.createElement('ul');
-      list.style.display = this.response.length > 2 ? 'none' : 'block';
+    _fieldset () {
+      let fieldset = document.createElement('fieldset')
+      let list = document.createElement('ul')
+      list.style.display = this.response.length > 2 ? 'none' : 'block'
 
       for (let i = 0; i < this.response.length; i++) {
-        let item = document.createElement('li');
-        item.append(this._link(this.response[i]));
-        list.append(item);
+        let item = document.createElement('li')
+        item.append(this._link(this.response[i]))
+        list.append(item)
       }
 
-      let legend = document.createElement('legend');
-      legend.innerHTML = this.uid + ' [' + this.response.length + ']';
+      let legend = document.createElement('legend')
+      legend.innerHTML = this.uid + ' [' + this.response.length + ']'
       legend.onclick = function () {
-        $(this).next().toggle();
-        return false;
-      };
-      fieldset.append(legend, list);
-      return fieldset;
+        $(this).next().toggle()
+        return false
+      }
+      fieldset.append(legend, list)
+      return fieldset
     }
 
     /**
@@ -402,22 +406,22 @@
      * @return {HTMLAnchorElement}
      * @protected
      */
-    _link(item) {
-      let a = document.createElement('a');
-      a.href = '#';
-      a.dataset.lat = item.lat;
-      a.dataset.lon = item.lon;
-      a.dataset.city = item.city;
-      a.dataset.street = item.street;
-      a.dataset.number = item.number;
-      a.dataset.name = item.name;
-      a.innerHTML = item.title;
-      a.title = item.raw;
-      a.className = NAME + '-link';
+    _link (item) {
+      let a = document.createElement('a')
+      a.href = '#'
+      a.dataset.lat = item.lat
+      a.dataset.lon = item.lon
+      a.dataset.city = item.city
+      a.dataset.street = item.street
+      a.dataset.number = item.number
+      a.dataset.name = item.name
+      a.innerHTML = item.title
+      a.title = item.raw
+      a.className = NAME + '-link'
       if (!item.city || !item.street || !item.number) {
-        a.className += ' noaddress';
+        a.className += ' noaddress'
       }
-      return a;
+      return a
     }
   }
 
@@ -425,25 +429,26 @@
    * Based on closest segment and city
    */
   class MagicProvider extends Provider {
-    constructor(container) {
-      super('Magic', container);
+    constructor (container) {
+      super('Magic', container)
     }
-    async request(lon, lat) {
-      let city = '';
-      let street = '';
-      let segment = findClosestSegment(new OL.Geometry.Point(lon, lat).transform('EPSG:4326', 'EPSG:900913'), true, true);
+
+    async request (lon, lat) {
+      let city = ''
+      let street = ''
+      let segment = findClosestSegment(new OL.Geometry.Point(lon, lat).transform('EPSG:4326', 'EPSG:900913'), true, true)
       if (segment) {
-        let address = segment.getAddress();
-        city = address.attributes.city.attributes.name;
-        street = address.attributes.street.name;
+        let address = segment.getAddress()
+        city = address.attributes.city.attributes.name
+        street = address.attributes.street.name
       }
 
       if (!city) {
-        let cities = W.model.cities.getObjectArray().filter(m => m.attributes.name !== null && m.attributes.name !== '').map(m => m.attributes.name);
-        city = cities.length ? cities[0] : '';
+        let cities = W.model.cities.getObjectArray().filter(m => m.attributes.name !== null && m.attributes.name !== '').map(m => m.attributes.name)
+        city = cities.length ? cities[0] : ''
       }
       if (!street) {
-        return [];
+        return []
       }
 
       // lon, lat, city, street, number, name
@@ -456,7 +461,7 @@
           '',
           ''
         )
-      ];
+      ]
     }
   }
 
@@ -464,43 +469,44 @@
    * visicom.ua
    */
   class VisicomProvider extends Provider {
-    constructor(container) {
-      super('Visicom', container);
+    constructor (container) {
+      super('Visicom', container)
     }
-    async request(lon, lat) {
-      let url = 'https://api.visicom.ua/data-api/5.0/uk/geocode.json';
+
+    async request (lon, lat) {
+      let url = 'https://api.visicom.ua/data-api/5.0/uk/geocode.json'
       let data = {
-        near: lon +','+lat,
+        near: lon + ',' + lat,
         categories: 'adr_address',
         radius: 50,
         limit: 10,
-        key: 'da'+'0110'+'e25fac44b1b9c849296387dba8',
-      };
+        key: 'da' + '0110' + 'e25fac44b1b9c849296387dba8',
+      }
 
-      let response = await this.makeRequest(url, data);
+      let response = await this.makeRequest(url, data)
 
       if (response.features && response.features.length) {
-        return this.collection(response.features);
+        return this.collection(response.features)
       } else {
-        return [];
+        return []
       }
     }
 
-    item(res) {
-      console.log(res);
-      let city = '';
-      let street = '';
-      let number = '';
+    item (res) {
+      console.log(res)
+      let city = ''
+      let street = ''
+      let number = ''
       if (res.properties.settlement) {
-        city = res.properties.settlement;
+        city = res.properties.settlement
       }
       if (res.properties.street) {
-        street = res.properties.street_type + ' ' + res.properties.street;
+        street = res.properties.street_type + ' ' + res.properties.street
       }
       if (res.properties.name) {
-        number = res.properties.name;
+        number = res.properties.name
       }
-      return this.element(res.geo_centroid.coordinates[0], res.geo_centroid.coordinates[1], city, street, number);
+      return this.element(res.geo_centroid.coordinates[0], res.geo_centroid.coordinates[1], city, street, number)
     }
   }
 
@@ -508,11 +514,12 @@
    * Open Street Map
    */
   class OsmProvider extends Provider {
-    constructor(container) {
-      super('OSM', container);
+    constructor (container) {
+      super('OSM', container)
     }
-    async request(lon, lat) {
-      let url = 'https://nominatim.openstreetmap.org/reverse';
+
+    async request (lon, lat) {
+      let url = 'https://nominatim.openstreetmap.org/reverse'
       let data = {
         lon: lon,
         lat: lat,
@@ -521,46 +528,47 @@
         countrycodes: settings.region[country]['language'],
         'accept-language': settings.region[country]['locale'],
         format: 'json',
-      };
+      }
 
-      let response = await this.makeRequest(url, data);
+      let response = await this.makeRequest(url, data)
 
       if (response.address && response.address.house_number) {
-        return [this.item(response)];
+        return [this.item(response)]
       } else {
-        return [];
+        return []
       }
     }
 
-    item(res) {
-      let city = '';
-      let street = '';
-      let number = '';
+    item (res) {
+      let city = ''
+      let street = ''
+      let number = ''
       if (res.address.city) {
-        city = res.address.city;
+        city = res.address.city
       } else if (res.address.town) {
-        city = res.address.town;
+        city = res.address.town
       }
       if (res.address.road) {
-        street = res.address.road;
+        street = res.address.road
       }
       if (res.address.house_number) {
-        number = res.address.house_number;
+        number = res.address.house_number
       }
-      return this.element(res.lon, res.lat, city, street, number);
+      return this.element(res.lon, res.lat, city, street, number)
     }
   }
 
   /**
    * 2GIS
-   * @link http://catalog.api.2gis.ru/doc/2.0/geo/#/default/get_2_0_geo_search
+   * @link https://docs.2gis.com/ru/api/search/geocoder/reference/2.0/geo/search#/default/get_2_0_geo_search
    */
   class GisProvider extends Provider {
-    constructor(container) {
-      super('2Gis', container);
+    constructor (container) {
+      super('2Gis', container)
     }
-    async request(lon, lat) {
-      let url = 'https://catalog.api.2gis.ru/2.0/geo/search?';
+
+    async request (lon, lat) {
+      let url = 'https://catalog.api.2gis.ua/2.0/geo/search?'
       let data = {
         point: lon + ',' + lat,
         radius: 20,
@@ -569,45 +577,46 @@
         locale: settings.region[country]['locale'],
         format: 'json',
         key: 'rubnkm' + '7490',
-      };
+      }
 
-      let response = await this.makeRequest(url, data);
+      let response = await this.makeRequest(url, data)
 
       if (!response.result || !response.result.items.length) {
-        return [];
+        return []
       }
-      return this.collection(response.result.items);
+      return this.collection(response.result.items)
     }
-    item(res) {
-      let output = [];
-      let city = '';
-      let street = '';
-      let number = '';
+
+    item (res) {
+      let output = []
+      let city = ''
+      let street = ''
+      let number = ''
       if (res.adm_div.length) {
         for (let i = 0; i < res.adm_div.length; i++) {
           if (res.adm_div[i].type === 'city') {
-            city = res.adm_div[i].name;
+            city = res.adm_div[i].name
           }
         }
       }
       if (res.address.components) { // optional
-        street = res.address.components[0].street;
-        number = res.address.components[0].number;
+        street = res.address.components[0].street
+        number = res.address.components[0].number
       } else if (res.address_name) { // optional
-        output.push(res.address_name);
+        output.push(res.address_name)
       } else if (res.name) {
-        output.push(res.name);
+        output.push(res.name)
       }
       // e.g. POINT(36.401143 49.916814)
-      let center = res.geometry.centroid.substring(6, res.geometry.centroid.length - 1).split(' ');
-      let lon = center[0];
-      let lat = center[1];
+      let center = res.geometry.centroid.substring(6, res.geometry.centroid.length - 1).split(' ')
+      let lon = center[0]
+      let lat = center[1]
 
-      let element = this.element(lon, lat, city, street, number, output.join(', '));
+      let element = this.element(lon, lat, city, street, number, output.join(', '))
       if (res.purpose_name) {
-        element.raw += ', ' + res.purpose_name;
+        element.raw += ', ' + res.purpose_name
       }
-      return element;
+      return element
     }
   }
 
@@ -616,11 +625,12 @@
    * @link https://developer.here.com/documentation/geocoder/topics/quick-start-geocode.html
    */
   class HereProvider extends Provider {
-    constructor(container) {
-      super('Here', container);
+    constructor (container) {
+      super('Here', container)
     }
-    async request(lon, lat) {
-      let url = 'https://reverse.geocoder.api.here.com/6.2/reversegeocode.json';
+
+    async request (lon, lat) {
+      let url = 'https://reverse.geocoder.api.here.com/6.2/reversegeocode.json'
       let data = {
         app_id: 'GCFmOOrSp8882vFwTxEm',
         app_code: 'O-LgGkoRfypnRuik0WjX9A',
@@ -628,24 +638,24 @@
         mode: 'retrieveAddresses',
         locationattributes: 'none,ar',
         addressattributes: 'str,hnr'
-      };
+      }
 
-      let response = await this.makeRequest(url, data);
+      let response = await this.makeRequest(url, data)
 
       if (!response.Response || !response.Response.View || !response.Response.View || !response.Response.View[0] || !response.Response.View[0].Result) {
-        return [];
+        return []
       }
-      return this.collection(response.Response.View[0].Result.filter(x => x.MatchLevel === 'houseNumber'));
+      return this.collection(response.Response.View[0].Result.filter(x => x.MatchLevel === 'houseNumber'))
     }
 
-    item(res) {
+    item (res) {
       return this.element(
         res.Location.DisplayPosition.Longitude,
         res.Location.DisplayPosition.Latitude,
         res.Location.Address.City,
         res.Location.Address.Street,
         res.Location.Address.HouseNumber
-      );
+      )
     }
   }
 
@@ -656,34 +666,35 @@
    * http://dev.virtualearth.net/REST/v1/Locations/50.03539,36.34732?o=xml&key=AuBfUY8Y1Nzf3sRgceOYxaIg7obOSaqvs0k5dhXWfZyFpT9ArotYNRK7DQ_qZqZw&c=uk&includeEntityTypes=Address
    */
   class BingProvider extends Provider {
-    constructor(container) {
-      super('Bing', container);
+    constructor (container) {
+      super('Bing', container)
     }
-    async request(lon, lat) {
-      let url = 'https://dev.virtualearth.net/REST/v1/Locations/' + lat + ',' + lon;
+
+    async request (lon, lat) {
+      let url = 'https://dev.virtualearth.net/REST/v1/Locations/' + lat + ',' + lon
       let data = {
         includeEntityTypes: 'Address',
         c: settings.region[country]['country'],
         key: 'AuBfUY8Y1Nzf' + '3sRgceOYxaIg7obOSaqvs' + '0k5dhXWfZyFpT9ArotYNRK7DQ_qZqZw',
-      };
+      }
 
-      let response = await this.makeRequest(url, data);
+      let response = await this.makeRequest(url, data)
 
       if (!response || !response.resourceSets || !response.resourceSets[0]) {
-        return [];
+        return []
       }
-      return this.collection(response.resourceSets[0].resources.filter(el => el.address.addressLine && el.address.addressLine.indexOf(',') > 0));
+      return this.collection(response.resourceSets[0].resources.filter(el => el.address.addressLine && el.address.addressLine.indexOf(',') > 0))
     }
 
-    item(res) {
-      let address = res.address.addressLine.split(',');
+    item (res) {
+      let address = res.address.addressLine.split(',')
       return this.element(
         res.point.coordinates[1],
         res.point.coordinates[0],
         res.address.locality,
         address[0],
         address[1]
-      );
+      )
     }
   }
 
@@ -692,11 +703,12 @@
    * @link https://developers.google.com/places/web-service/search
    */
   class GoogleProvider extends Provider {
-    constructor(container) {
-      super('Google', container);
+    constructor (container) {
+      super('Google', container)
     }
-    async request(lon, lat) {
-      let url = 'https://' + location.hostname + '/maps/api/place/nearbysearch/json';
+
+    async request (lon, lat) {
+      let url = 'https://' + location.hostname + '/maps/api/place/nearbysearch/json'
       let data = {
         location: lat + ',' + lon,
         radius: 40,
@@ -704,23 +716,24 @@
         types: 'point_of_interest',
         language: settings.region[country]['country'],
         key: 'AIzaSy' + 'CebbES' + 'rWERY1MRZ56gEAfpt7tK2R6hV_I', // extract it from WME
-      };
+      }
 
-      let response = await this.makeRequest(url, data);
+      let response = await this.makeRequest(url, data)
 
       if (!response.results || !response.results.length) {
-        return [];
+        return []
       }
-      return this.collection(response.results);
+      return this.collection(response.results)
     }
-    item(res) {
-      let address = res.vicinity.split(',');
-      address = address.map(str => str.trim());
+
+    item (res) {
+      let address = res.vicinity.split(',')
+      address = address.map(str => str.trim())
 
       // looks like hell
-      let street = address[0] && address[0].length > 4 ? address[0] : '';
-      let number = address[1] && address[1].length < 13 ? address[1] : '';
-      let city = address[2] ? address[2] : '';
+      let street = address[0] && address[0].length > 4 ? address[0] : ''
+      let number = address[1] && address[1].length < 13 ? address[1] : ''
+      let city = address[2] ? address[2] : ''
 
       return this.element(
         res.geometry.location.lng,
@@ -729,7 +742,7 @@
         street,
         number,
         res.name
-      );
+      )
     }
   }
 
@@ -740,47 +753,50 @@
     .on('click', '.' + NAME + '-link', applyData)
     .on('mouseenter', '.' + NAME + '-link', showVector)
     .on('mouseleave', '.' + NAME + '-link', hideVector)
-  ;
 
-  $(window).on('beforeunload', () => E50Settings.save());
+  $(window).on('beforeunload', () => E50Settings.save())
 
-  function ready() {
-    WazeActionUpdateObject = require('Waze/Action/UpdateObject');
-    WazeActionUpdateFeatureAddress = require('Waze/Action/UpdateFeatureAddress');
+  function ready () {
+    WazeActionUpdateObject = require('Waze/Action/UpdateObject')
+    WazeActionUpdateFeatureAddress = require('Waze/Action/UpdateFeatureAddress')
 
-    helper = new APIHelperUI(NAME);
+    helper = new APIHelperUI(NAME)
 
-    modal = helper.createModal(I18n.t(NAME).title);
+    modal = helper.createModal(I18n.t(NAME).title)
 
-    panel = helper.createPanel(I18n.t(NAME).title);
+    panel = helper.createPanel(I18n.t(NAME).title)
 
-    tab = helper.createTab(I18n.t(NAME).title);
+    tab = helper.createTab(
+      I18n.t(NAME).title,
+      null,
+      '<i class="w-icon panel-header-component-icon w-icon-suggestion-fill"></i>'
+    )
 
     // Setup options
-    let fsOptions = helper.createFieldset(I18n.t(NAME).options.title);
-    let options = E50Settings.get('options');
+    let fsOptions = helper.createFieldset(I18n.t(NAME).options.title)
+    let options = E50Settings.get('options')
     for (let item in options) {
       if (options.hasOwnProperty(item)) {
         fsOptions.addCheckbox(item, I18n.t(NAME).options[item], I18n.t(NAME).options[item], function (event) {
-          E50Settings.set(['options', item], event.target.checked);
-        }, E50Settings.get('options', item));
+          E50Settings.set(['options', item], event.target.checked)
+        }, E50Settings.get('options', item))
       }
     }
-    tab.addElement(fsOptions);
+    tab.addElement(fsOptions)
 
     // Setup providers settings
-    let fsProviders = helper.createFieldset(I18n.t(NAME).providers.title);
-    let providers = E50Settings.get('providers');
+    let fsProviders = helper.createFieldset(I18n.t(NAME).providers.title)
+    let providers = E50Settings.get('providers')
     for (let item in providers) {
       if (providers.hasOwnProperty(item)) {
         fsProviders.addCheckbox(item, I18n.t(NAME).providers[item], I18n.t(NAME).providers[item], function (event) {
-          E50Settings.set(['providers', item], event.target.checked);
-        }, E50Settings.get('providers', item));
+          E50Settings.set(['providers', item], event.target.checked)
+        }, E50Settings.get('providers', item))
       }
     }
-    tab.addElement(fsProviders);
+    tab.addElement(fsProviders)
 
-    tab.inject();
+    tab.inject()
 
     // Shortcut for copy POI data to clipboard
     new APIHelperUIShortcut(
@@ -792,55 +808,55 @@
       function () {
         if (!W.selectionManager.hasSelectedFeatures() ||
           W.selectionManager.getSelectedFeatures()[0].model.type !== 'venue') {
-          return;
+          return
         }
-        let poi = W.selectionManager.getSelectedFeatures()[0].model;
+        let poi = W.selectionManager.getSelectedFeatures()[0].model
         let data = [
           poi.attributes.name,
           poi.getAddress().attributes.houseNumber,
           poi.getAddress().getStreet().name,
           poi.getAddress().getCity().getName(),
-        ];
-        data = data.filter(x => !!x);
-        data = data.filter((v, i, a) => a.indexOf(v) === i);
+        ]
+        data = data.filter(x => !!x)
+        data = data.filter((v, i, a) => a.indexOf(v) === i)
 
-        toClipboard(data.join(' '));
+        toClipboard(data.join(' '))
       },
       null
-    ).add();
+    ).add()
 
     // Create layer for vectors
-    vectorLayer = new OL.Layer.Vector("E50VectorLayer", {
+    vectorLayer = new OL.Layer.Vector('E50VectorLayer', {
       displayInLayerSwitcher: false,
-      uniqueName: "__E50VectorLayer"
-    });
+      uniqueName: '__E50VectorLayer'
+    })
 
-    W.map.addLayer(vectorLayer);
-    country = 232 //W.model.getTopCountry().getID();
+    W.map.addLayer(vectorLayer)
+    country = 232 // W.model.getTopCountry().getID(); // default is Ukraine
   }
 
   /**
    * Clear modal panel
    */
-  function clearPanel() {
-    document.getElementById('panel-container').innerHTML = '';
-    hideVector();
+  function clearPanel () {
+    document.getElementById('panel-container').innerHTML = ''
+    hideVector()
   }
 
   /**
    *
    * @return {null|Object}
    */
-  function getSelectedPOI() {
-    let except = ['NATURAL_FEATURES'];
-    let elements = W.selectionManager.getSelectedFeatures().map((x) => x.model).filter((el) => el.type === 'venue');
+  function getSelectedPOI () {
+    let except = ['NATURAL_FEATURES']
+    let elements = W.selectionManager.getSelectedFeatures().map((x) => x.model).filter((el) => el.type === 'venue')
     if (except.length) {
-      elements = elements.filter(model => except.indexOf(model.getMainCategory()) === -1);
+      elements = elements.filter(model => except.indexOf(model.getMainCategory()) === -1)
     }
     if (elements.length === 0) {
-      return null;
+      return null
     } else {
-      return elements[0];
+      return elements[0]
     }
   }
 
@@ -848,21 +864,21 @@
    * Returns an array of all segments in the current extent
    * @function WazeWrap.Model.getOnscreenSegments
    */
-  function getOnscreenSegments() {
-    let segments = W.model.segments.objects;
-    let mapExtent = W.map.getExtent();
-    let onScreenSegments = [];
-    let seg;
+  function getOnscreenSegments () {
+    let segments = W.model.segments.objects
+    let mapExtent = W.map.getExtent()
+    let onScreenSegments = []
+    let seg
 
     for (let s in segments) {
       if (!segments.hasOwnProperty(s))
-        continue;
+        continue
 
-      seg = W.model.segments.getObjectById(s);
+      seg = W.model.segments.getObjectById(s)
       if (mapExtent.intersectsBounds(seg.geometry.getBounds()))
-        onScreenSegments.push(seg);
+        onScreenSegments.push(seg)
     }
-    return onScreenSegments;
+    return onScreenSegments
   }
 
   /**
@@ -872,112 +888,110 @@
    * @param {boolean} If true, Parking Lot Road segments will be ignored when finding the closest segment
    * @param {boolean} If true, Private Road segments will be ignored when finding the closest segment
    */
-  function findClosestSegment(mygeometry, ignorePLR, ignoreUnnamedPR) {
-    let onscreenSegments = getOnscreenSegments();
-    let minDistance = Infinity;
-    let closestSegment;
+  function findClosestSegment (mygeometry, ignorePLR, ignoreUnnamedPR) {
+    let onscreenSegments = getOnscreenSegments()
+    let minDistance = Infinity
+    let closestSegment
 
-    for (var s in onscreenSegments) {
+    for (let s in onscreenSegments) {
       if (!onscreenSegments.hasOwnProperty(s))
-        continue;
+        continue
 
-      let segmentType = onscreenSegments[s].attributes.roadType;
+      let segmentType = onscreenSegments[s].attributes.roadType
       if (segmentType === 10 || segmentType === 16 || segmentType === 18 || segmentType === 19) //10 ped boardwalk, 16 stairway, 18 railroad, 19 runway, 3 freeway
-        continue;
+        continue
 
       if (ignorePLR && segmentType === 20) //PLR
-        continue;
+        continue
 
       if (ignoreUnnamedPR)
         if (segmentType === 17 && W.model.streets.getObjectById(onscreenSegments[s].attributes.primaryStreetID).name === null) //PR
-          continue;
+          continue
 
-
-      let distanceToSegment = mygeometry.distanceTo(onscreenSegments[s].geometry, { details: true });
+      let distanceToSegment = mygeometry.distanceTo(onscreenSegments[s].geometry, { details: true })
 
       if (distanceToSegment.distance < minDistance) {
-        minDistance = distanceToSegment.distance;
-        closestSegment = onscreenSegments[s];
-        closestSegment.closestPoint = new OpenLayers.Geometry.Point(distanceToSegment.x1, distanceToSegment.y1);
+        minDistance = distanceToSegment.distance
+        closestSegment = onscreenSegments[s]
+        closestSegment.closestPoint = new OpenLayers.Geometry.Point(distanceToSegment.x1, distanceToSegment.y1)
       }
     }
-    return closestSegment;
-  };
-
+    return closestSegment
+  }
 
   /**
    * Create and fill modal panel
    * @param event
    * @param element
    */
-  function landmarkPanel(event, element) {
-    let container, parent;
+  function landmarkPanel (event, element) {
+    let container, parent
     if (E50Settings.get('options', 'modal')) {
-      parent = modal.html();
-      container = parent.querySelector('.body');
+      parent = modal.html()
+      container = parent.querySelector('.body')
     } else {
-      parent = panel.html();
-      container = parent.querySelector('.controls');
+      parent = panel.html()
+      container = parent.querySelector('.controls')
     }
 
     // Clear container
     while (container.hasChildNodes()) {
-      container.removeChild(container.lastChild);
+      container.removeChild(container.lastChild)
     }
 
-    let poi = getSelectedPOI();
+    let poi = getSelectedPOI()
 
     if (!poi) {
-      return;
+      return
     }
 
-    let selected = poi.geometry.getCentroid().clone();
-    selected.transform('EPSG:900913', 'EPSG:4326');
+    let selected = poi.geometry.getCentroid().clone()
+    selected.transform('EPSG:900913', 'EPSG:4326')
 
     if (E50Settings.get('providers').magic) {
-      let Magic = new MagicProvider(container);
-      Magic.search(selected.x, selected.y);
+      let Magic = new MagicProvider(container)
+      Magic.search(selected.x, selected.y)
     }
 
     if (E50Settings.get('providers').osm) {
-      let Osm = new OsmProvider(container);
-      Osm.search(selected.x, selected.y);
+      let Osm = new OsmProvider(container)
+      Osm.search(selected.x, selected.y)
     }
 
     if (E50Settings.get('providers').gis) {
-      let Gis = new GisProvider(container);
-      Gis.search(selected.x, selected.y);
+      let Gis = new GisProvider(container)
+      Gis.search(selected.x, selected.y)
     }
 
     if (E50Settings.get('providers').visicom) {
-      let Visicom = new VisicomProvider(container);
-      Visicom.search(selected.x, selected.y);
+      let Visicom = new VisicomProvider(container)
+      Visicom.search(selected.x, selected.y)
     }
 
     if (E50Settings.get('providers').here) {
-      let Here = new HereProvider(container);
-      Here.search(selected.x, selected.y);
+      let Here = new HereProvider(container)
+      Here.search(selected.x, selected.y)
     }
 
     if (E50Settings.get('providers').bing) {
-      let Bing = new BingProvider(container);
-      Bing.search(selected.x, selected.y);
+      let Bing = new BingProvider(container)
+      Bing.search(selected.x, selected.y)
     }
 
     if (E50Settings.get('providers').google) {
-      let Google = new GoogleProvider(container);
-      Google.search(selected.x, selected.y);
+      let Google = new GoogleProvider(container)
+      Google.search(selected.x, selected.y)
     }
 
     if (E50Settings.get('options', 'modal')) {
       if (E50Settings.get('options', 'transparent')) {
-        parent.style.opacity = 0.6;
-        parent.onmouseover = () => (parent.style.opacity = 1);
-        parent.onmouseout = () => (parent.style.opacity = 0.6);
+        parent.style.opacity = 0.6
+        parent.onmouseover = () => (parent.style.opacity = 1)
+        parent.onmouseout = () => (parent.style.opacity = 0.6)
       }
-      modal.container().append(parent);
+      modal.container().append(parent)
     } else {
-      element.prepend(parent);
+      element.prepend(parent)
     }
   }
 
@@ -985,82 +999,82 @@
    * Apply data to current selected POI
    * @param event
    */
-  function applyData(event) {
-    event.preventDefault();
-    let poi = getSelectedPOI();
+  function applyData (event) {
+    event.preventDefault()
+    let poi = getSelectedPOI()
 
     if (!poi.isGeometryEditable()) {
-      return;
+      return
     }
 
-    let lat = this.dataset.lat;
-    let lon = this.dataset.lon;
-    let name = this.dataset.name;
-    let city = this.dataset.city;
-    let street = this.dataset.street;
-    let number = this.dataset.number;
+    let lat = this.dataset.lat
+    let lon = this.dataset.lon
+    let name = this.dataset.name
+    let city = this.dataset.city
+    let street = this.dataset.street
+    let number = this.dataset.number
 
     if (E50Settings.get('options', 'copyData')) {
-      toClipboard([name, number, street, city].filter(x => !!x).join(' '));
+      toClipboard([name, number, street, city].filter(x => !!x).join(' '))
     }
 
     // POI Name
-    let newName;
+    let newName
     // If exists name ask user to replace it or not
     // If not exists - use name or house number as name
     if (poi.attributes.name) {
       if (name && name !== poi.attributes.name) {
         if (window.confirm(I18n.t(NAME).questions.changeName + '\n«' + poi.attributes.name + '» ⟶ «' + name + '»?')) {
-          newName = name;
+          newName = name
         }
       } else if (number && number !== poi.attributes.name) {
         if (window.confirm(I18n.t(NAME).questions.changeName + '\n«' + poi.attributes.name + '» ⟶ «' + number + '»?')) {
-          newName = number;
+          newName = number
         }
       }
     } else if (name) {
-      newName = name;
+      newName = name
     } else if (number) {
-      newName = number;
+      newName = number
       // Update alias for korpus
       if ((new RegExp('[0-9]+[а-яі]?к[0-9]+', 'i')).test(number)) {
-        let alias = number.replace('к', ' корпус ');
-        let aliases = poi.attributes.aliases.slice();
+        let alias = number.replace('к', ' корпус ')
+        let aliases = poi.attributes.aliases.slice()
         if (aliases.indexOf(alias) === -1) {
-          aliases.push(alias);
-          W.model.actionManager.add(new WazeActionUpdateObject(poi, {aliases: aliases}));
+          aliases.push(alias)
+          W.model.actionManager.add(new WazeActionUpdateObject(poi, { aliases: aliases }))
         }
       }
     }
     if (newName) {
-      W.model.actionManager.add(new WazeActionUpdateObject(poi, {name: newName}));
+      W.model.actionManager.add(new WazeActionUpdateObject(poi, { name: newName }))
     }
 
     // POI Address Street Name
-    let newStreet;
-    let addressStreet = poi.getAddress().getStreet() ? poi.getAddress().getStreet().name : '';
+    let newStreet
+    let addressStreet = poi.getAddress().getStreet() ? poi.getAddress().getStreet().name : ''
     if (street) {
       if (addressStreet) {
         if (addressStreet !== street &&
           window.confirm(I18n.t(NAME).questions.changeStreet + '\n«' + addressStreet + '» ⟶ «' + street + '»?')) {
-          newStreet = street;
+          newStreet = street
         }
       } else {
-        newStreet = street;
+        newStreet = street
       }
     }
 
     // POI Address City
-    let newCity;
-    let addressCity = poi.getAddress().getCity() ? poi.getAddress().getCity().getName() : '';
+    let newCity
+    let addressCity = poi.getAddress().getCity() ? poi.getAddress().getCity().getName() : ''
     if (city) {
       if (addressCity) {
         if (addressCity !== city &&
           window.confirm(I18n.t(NAME).questions.changeCity + '\n«' + addressCity + '» ⟶ «' + city + '»?')) {
-          newCity = city;
+          newCity = city
         }
       } else {
-        newCity = city;
+        newCity = city
       }
     }
     if (newCity || newStreet) {
@@ -1069,53 +1083,53 @@
         stateID: W.model.getTopState().getID(),
         cityName: newCity ? newCity : poi.getAddress().getCityName(),
         streetName: newStreet ? newStreet : poi.getAddress().getStreetName()
-      };
-      W.model.actionManager.add(new WazeActionUpdateFeatureAddress(poi, address));
+      }
+      W.model.actionManager.add(new WazeActionUpdateFeatureAddress(poi, address))
     }
 
     // POI Address HouseNumber
-    let newHN;
-    let addressHN = poi.getAddress().attributes.houseNumber;
+    let newHN
+    let addressHN = poi.getAddress().attributes.houseNumber
     if (number) {
       // Normalize «korpus»
-      number = number.replace(/^(\d+)к(\d+)$/i, '$1-$2');
+      number = number.replace(/^(\d+)к(\d+)$/i, '$1-$2')
       // Check number for invalid format for Waze
       if ((new RegExp('^[0-9]+[а-яі][к|/][0-9]+$', 'i')).test(number)) {
         // Skip this step
-        console.log(NAME, 'skipped «' + number + '»');
+        console.log(NAME, 'skipped «' + number + '»')
       } else if (addressHN) {
         if (addressHN !== number &&
-            window.confirm(I18n.t(NAME).questions.changeNumber + '\n«' + addressHN + '» ⟶ «' + number + '»?')) {
-          newHN = number;
+          window.confirm(I18n.t(NAME).questions.changeNumber + '\n«' + addressHN + '» ⟶ «' + number + '»?')) {
+          newHN = number
         }
       } else {
-        newHN = number;
+        newHN = number
       }
       if (newHN) {
-        W.model.actionManager.add(new WazeActionUpdateObject(poi, {houseNumber: newHN}));
+        W.model.actionManager.add(new WazeActionUpdateObject(poi, { houseNumber: newHN }))
       }
     }
 
     // If no entry point we would create it
     if (E50Settings.get('options', 'entryPoint') && poi.attributes.entryExitPoints.length === 0) {
       // Create point based on data from external source
-      let point = new OL.Geometry.Point(lon, lat).transform('EPSG:4326', 'EPSG:900913');
+      let point = new OL.Geometry.Point(lon, lat).transform('EPSG:4326', 'EPSG:900913')
       // Check intersection with selected POI
       if (!poi.getPolygonGeometry().intersects(point)) {
-        point = poi.geometry.getCentroid();
+        point = poi.geometry.getCentroid()
       }
       // Create entry point
-      let navPoint = new NavigationPoint(point);
-      W.model.actionManager.add(new WazeActionUpdateObject(poi, {entryExitPoints: [navPoint]}));
+      let navPoint = new NavigationPoint(point)
+      W.model.actionManager.add(new WazeActionUpdateObject(poi, { entryExitPoints: [navPoint] }))
     }
 
     // Lock to level 2
     if (E50Settings.get('options', 'lock') && poi.attributes.lockRank < 1 && W.loginManager.user.getRank() > 0) {
-      W.model.actionManager.add(new WazeActionUpdateObject(poi, {lockRank: 1}));
+      W.model.actionManager.add(new WazeActionUpdateObject(poi, { lockRank: 1 }))
     }
 
     if (newName || newHN || newStreet || newCity) {
-      W.selectionManager.setSelectedModels([poi]);
+      W.selectionManager.setSelectedModels([poi])
     }
   }
 
@@ -1123,67 +1137,67 @@
    * @param   {String} str
    * @returns {String}
    */
-  function normalizeString(str) {
+  function normalizeString (str) {
     // Clear space symbols and double quotes
     str = str.trim()
       .replace(/["“”]/g, '')
       .replace(/\s{2,}/g, ' ')
-    ;
+
     // Clear accents/diacritics, but "\u0306" needed for "й"
     // str = str.normalize('NFD').replace(/[\u0300-\u0305\u0309-\u036f]/g, '');
-    return str;
+    return str
   }
 
   /**
    * @param  {String} name
    * @return {String}
    */
-  function normalizeName(name) {
-    name = normalizeString(name);
-    name = name.replace(/[№#]/g, '');
-    name = name.replace(/\.$/, '');
-    return name;
+  function normalizeName (name) {
+    name = normalizeString(name)
+    name = name.replace(/[№#]/g, '')
+    name = name.replace(/\.$/, '')
+    return name
   }
 
   /**
    * @param  {String} city
    * @return {String}
    */
-  function normalizeCity(city) {
-    city = normalizeString(city);
+  function normalizeCity (city) {
+    city = normalizeString(city)
 
     if (city === '') {
-      return '';
+      return ''
     }
 
     // Get list of all available cities
-    let cities = W.model.cities.getObjectArray().filter(m => m.attributes.name !== null && m.attributes.name !== '').map(m => m.attributes.name);
+    let cities = W.model.cities.getObjectArray().filter(m => m.attributes.name !== null && m.attributes.name !== '').map(m => m.attributes.name)
 
     // More than one city, use city with best matching score
     // Remove text in the "( )", Waze puts region name to the pair brackets
-    let best = findBestMatch(city, cities.map(city => city.replace(/( ?\(.*\))/gi, '')));
+    let best = findBestMatch(city, cities.map(city => city.replace(/( ?\(.*\))/gi, '')))
     if (best > -1) {
-      city = cities[best];
+      city = cities[best]
     }
-    console.log(NAME, arguments[0], '=>', city);
-    return city;
+    console.log(NAME, arguments[0], '=>', city)
+    return city
   }
 
   /**
    * @param  {String} street
    * @return {String}
    */
-  function normalizeStreet(street) {
-    street = normalizeString(street);
+  function normalizeStreet (street) {
+    street = normalizeString(street)
 
     if (street === '') {
-      return '';
+      return ''
     }
 
     // Prepare street name
-    street = street.replace(/[’']/, '\'');
+    street = street.replace(/[’']/, '\'')
     // Remove text in the "( )", OSM puts alternative name to the pair brackets
-    street = street.replace(/( ?\(.*\))/gi, '');
+    street = street.replace(/( ?\(.*\))/gi, '')
 
     // Normalize title
     let regs = {
@@ -1204,103 +1218,103 @@
       '(^| )проспект( |$)': '$1просп.$2',     // normalize
       '(^| )район( |$)': '$1р-н$2',           // normalize
       '(^| )станція( |$)': '$1ст.$2',         // normalize
-    };
+    }
 
     for (let key in regs) {
-      let re = new RegExp(key, 'gi');
+      let re = new RegExp(key, 'gi')
       if (re.test(street)) {
-        street = street.replace(re, regs[key]);
-        break;
+        street = street.replace(re, regs[key])
+        break
       }
     }
 
     // Get all streets
-    let streets = W.model.streets.getObjectArray().filter(m => m.name !== null && m.name !== '').map(m => m.name);
+    let streets = W.model.streets.getObjectArray().filter(m => m.name !== null && m.name !== '').map(m => m.name)
 
     // Get type and create RegExp for filter streets
-    let reTypes = new RegExp('(алея|б-р|в\'їзд|вул\\.|дор\\.|мкрн|наб\\.|площа|пров\\.|пр\\.|просп\\.|р-н|ст\\.|тракт|траса|тупик|узвіз|шосе)', 'gi');
-    let matches = [...street.matchAll(reTypes)];
-    let types = [];
+    let reTypes = new RegExp('(алея|б-р|в\'їзд|вул\\.|дор\\.|мкрн|наб\\.|площа|пров\\.|пр\\.|просп\\.|р-н|ст\\.|тракт|траса|тупик|узвіз|шосе)', 'gi')
+    let matches = [...street.matchAll(reTypes)]
+    let types = []
 
     // Detect type(s)
     if (matches.length === 0) {
-      types.push('вул.'); // setup basic type
-      street = 'вул. ' + street;
+      types.push('вул.') // setup basic type
+      street = 'вул. ' + street
     } else {
-      types = matches.map(match => match[0].toLowerCase());
+      types = matches.map(match => match[0].toLowerCase())
     }
     // Filter streets by detected type(s)
-    let filteredStreets = streets.filter(street => types.some(type => street.indexOf(type) > -1));
+    let filteredStreets = streets.filter(street => types.some(type => street.indexOf(type) > -1))
     // Matching names without type(s)
     let best = findBestMatch(
       street.replace(reTypes, '').toLowerCase().trim(),
       filteredStreets.map(street => street.replace(reTypes, '').toLowerCase().trim())
-    );
+    )
     if (best > -1) {
-      street = filteredStreets[best];
+      street = filteredStreets[best]
     } else {
       // Matching with type
       best = findBestMatch(
         street.toLowerCase().trim(),
         streets.map(street => street.toLowerCase().trim())
-      );
+      )
       if (best > -1) {
-        street = streets[best];
+        street = streets[best]
       }
     }
-    console.log(NAME, arguments[0], '=>', street);
-    return street;
+    console.log(NAME, arguments[0], '=>', street)
+    return street
   }
 
   /**
    * @param  {String} number
    * @return {String}
    */
-  function normalizeNumber(number) {
+  function normalizeNumber (number) {
     // process "д."
-    number = number.replace(/^д\. ?/i, '');
+    number = number.replace(/^д\. ?/i, '')
     // process "дом"
-    number = number.replace(/^дом ?/i, '');
+    number = number.replace(/^дом ?/i, '')
     // process "буд."
-    number = number.replace(/^буд\. ?/i, '');
+    number = number.replace(/^буд\. ?/i, '')
     // remove spaces
-    number = number.trim().replace(/\s/g, '');
-    number = number.toUpperCase();
+    number = number.trim().replace(/\s/g, '')
+    number = number.toUpperCase()
     // process Latin to Cyrillic
-    number = number.replace('A', 'А');
-    number = number.replace('B', 'В');
-    number = number.replace('E', 'Е');
-    number = number.replace('I', 'І');
-    number = number.replace('K', 'К');
-    number = number.replace('M', 'М');
-    number = number.replace('H', 'Н');
-    number = number.replace('О', 'О');
-    number = number.replace('P', 'Р');
-    number = number.replace('C', 'С');
-    number = number.replace('T', 'Т');
-    number = number.replace('Y', 'У');
+    number = number.replace('A', 'А')
+    number = number.replace('B', 'В')
+    number = number.replace('E', 'Е')
+    number = number.replace('I', 'І')
+    number = number.replace('K', 'К')
+    number = number.replace('M', 'М')
+    number = number.replace('H', 'Н')
+    number = number.replace('О', 'О')
+    number = number.replace('P', 'Р')
+    number = number.replace('C', 'С')
+    number = number.replace('T', 'Т')
+    number = number.replace('Y', 'У')
     // process і,з,о
-    number = number.replace('І', 'і');
-    number = number.replace('З', 'з');
-    number = number.replace('О', 'о');
+    number = number.replace('І', 'і')
+    number = number.replace('З', 'з')
+    number = number.replace('О', 'о')
     // process "корпус" to "к"
-    number = number.replace(/(.*)к(?:орп|орпус)?(\d+)/gi, '$1к$2');
+    number = number.replace(/(.*)к(?:орп|орпус)?(\d+)/gi, '$1к$2')
     // process "N-M" or "N/M" to "NM"
-    number = number.replace(/(.*)[-/]([а-яі])/gi, '$1$2');
+    number = number.replace(/(.*)[-/]([а-яі])/gi, '$1$2')
     // valid number format
     //  123А  123А/321 123А/321Б 123к1 123Ак2
     if (!number.match(/^\d+[а-яі]?([/к]\d+[а-яі]?)?$/gi)) {
-      return '';
+      return ''
     }
-    return number;
+    return number
   }
 
-  function toClipboard(text) {
+  function toClipboard (text) {
     // normalize
-    text = normalizeString(text);
-    text = text.replace(/'/g, '');
-    Tools.copyToClipboard(text);
-    console.log(NAME, 'copied «' + text + '»');
+    text = normalizeString(text)
+    text = text.replace(/'/g, '')
+    GM.setClipboard(text)
+    console.log(NAME, 'copied «' + text + '»')
   }
 
   /**
@@ -1308,26 +1322,27 @@
    * @function WazeWrap.Geometry.calculateDistance
    * @param {OpenLayers.Geometry.Point} An array of OpenLayers.Geometry.Point with which to measure the total distance. A minimum of 2 points is needed.
    */
-  function calculateDistance(pointArray) {
-    if (pointArray.length < 2)
-      return 0;
+  function calculateDistance (pointArray) {
+    if (pointArray.length < 2) {
+      return 0
+    }
 
-    let line = new OpenLayers.Geometry.LineString(pointArray);
-    let length = line.getGeodesicLength(W.map.getProjectionObject());
-    return length; //multiply by 3.28084 to convert to feet
+    let line = new OpenLayers.Geometry.LineString(pointArray)
+    let length = line.getGeodesicLength(W.map.getProjectionObject())
+    return length // multiply by 3.28084 to convert to feet
   }
 
   /**
    * Show vector from centr of the selected POI to point by lon and lat
    */
-  function showVector() {
-    let poi = getSelectedPOI();
+  function showVector () {
+    let poi = getSelectedPOI()
     if (!poi) {
-      return;
+      return
     }
-    let from = poi.geometry.getCentroid();
-    let to = new OL.Geometry.Point(this.dataset.lon, this.dataset.lat).transform('EPSG:4326', 'EPSG:900913');
-    let distance = Math.round(calculateDistance([to, from]));
+    let from = poi.geometry.getCentroid()
+    let to = new OL.Geometry.Point(this.dataset.lon, this.dataset.lat).transform('EPSG:4326', 'EPSG:900913')
+    let distance = Math.round(calculateDistance([to, from]))
 
     vectorLine = new OL.Feature.Vector(new OL.Geometry.LineString([from, to]), {}, {
       strokeWidth: 4,
@@ -1343,7 +1358,7 @@
       fontFamily: 'Courier New, monospace',
       fontWeight: 'bold',
       labelYOffset: 24
-    });
+    })
     vectorPoint = new OL.Feature.Vector(to, {}, {
       pointRadius: 8,
       fillOpacity: 0.5,
@@ -1351,18 +1366,18 @@
       strokeColor: '#fff',
       strokeWidth: 2,
       strokeLinecap: 'round'
-    });
-    vectorLayer.addFeatures([vectorLine, vectorPoint]);
-    vectorLayer.setZIndex(1001);
-    vectorLayer.setVisibility(true);
+    })
+    vectorLayer.addFeatures([vectorLine, vectorPoint])
+    vectorLayer.setZIndex(1001)
+    vectorLayer.setVisibility(true)
   }
 
   /**
    * Hide and clear all vectors
    */
-  function hideVector() {
-    vectorLayer.removeAllFeatures();
-    vectorLayer.setVisibility(false);
+  function hideVector () {
+    vectorLayer.removeAllFeatures()
+    vectorLayer.setVisibility(false)
   }
 
   /**
@@ -1371,35 +1386,35 @@
    * @param  {String} second
    * @return {Number}
    */
-  function compareTwoStrings(first, second) {
-    first = first.replace(/\s+/g, '');
-    second = second.replace(/\s+/g, '');
+  function compareTwoStrings (first, second) {
+    first = first.replace(/\s+/g, '')
+    second = second.replace(/\s+/g, '')
 
-    if (!first.length && !second.length) return 1;           // if both are empty strings
-    if (!first.length || !second.length) return 0;           // if only one is empty string
-    if (first === second) return 1;                          // identical
-    if (first.length === 1 && second.length === 1) return 0; // both are 1-letter strings
-    if (first.length < 2 || second.length < 2) return 0;     // if either is a 1-letter string
+    if (!first.length && !second.length) return 1           // if both are empty strings
+    if (!first.length || !second.length) return 0           // if only one is empty string
+    if (first === second) return 1                          // identical
+    if (first.length === 1 && second.length === 1) return 0 // both are 1-letter strings
+    if (first.length < 2 || second.length < 2) return 0     // if either is a 1-letter string
 
-    let firstBigrams = new Map();
+    let firstBigrams = new Map()
     for (let i = 0; i < first.length - 1; i++) {
-      const bigram = first.substring(i, i + 2);
-      const count = firstBigrams.has(bigram) ? firstBigrams.get(bigram) + 1 : 1;
+      const bigram = first.substring(i, i + 2)
+      const count = firstBigrams.has(bigram) ? firstBigrams.get(bigram) + 1 : 1
 
-      firstBigrams.set(bigram, count);
+      firstBigrams.set(bigram, count)
     }
 
-    let intersectionSize = 0;
+    let intersectionSize = 0
     for (let i = 0; i < second.length - 1; i++) {
-      const bigram = second.substring(i, i + 2);
-      const count = firstBigrams.has(bigram) ? firstBigrams.get(bigram) : 0;
+      const bigram = second.substring(i, i + 2)
+      const count = firstBigrams.has(bigram) ? firstBigrams.get(bigram) : 0
 
       if (count > 0) {
-        firstBigrams.set(bigram, count - 1);
-        intersectionSize++;
+        firstBigrams.set(bigram, count - 1)
+        intersectionSize++
       }
     }
-    return (2.0 * intersectionSize) / (first.length + second.length - 2);
+    return (2.0 * intersectionSize) / (first.length + second.length - 2)
   }
 
   /**
@@ -1407,27 +1422,26 @@
    * @param  {String[]} targetStrings
    * @return {Number}
    */
-  function findBestMatch(mainString, targetStrings) {
-    let bestMatch = '';
-    let bestMatchRating = 0;
-    let bestMatchIndex = -1;
+  function findBestMatch (mainString, targetStrings) {
+    let bestMatch = ''
+    let bestMatchRating = 0
+    let bestMatchIndex = -1
 
     for (let i = 0; i < targetStrings.length; i++) {
-      let rating = compareTwoStrings(mainString, targetStrings[i]);
+      let rating = compareTwoStrings(mainString, targetStrings[i])
       if (rating > bestMatchRating) {
-        bestMatch = targetStrings[i];
-        bestMatchRating = rating;
-        bestMatchIndex = i;
+        bestMatch = targetStrings[i]
+        bestMatchRating = rating
+        bestMatchIndex = i
       }
     }
     if (bestMatch === '' || bestMatchRating < 0.35) {
-      console.log(NAME, mainString, 'not matched', targetStrings);
-      return -1;
+      console.log(NAME, mainString, 'not matched', targetStrings)
+      return -1
     } else {
-      console.log(NAME, mainString, '<=>', bestMatch, '=', bestMatchRating);
-      return bestMatchIndex;
+      console.log(NAME, mainString, '<=>', bestMatch, '=', bestMatchRating)
+      return bestMatchIndex
     }
   }
 
-
-})();
+})()
