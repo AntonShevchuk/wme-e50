@@ -1,13 +1,11 @@
 // ==UserScript==
 // @name         WME E50 Fetch POI Data
-// @version      0.6.3
+// @version      0.6.4
 // @description  Fetch information about the POI from external sources
 // @author       Anton Shevchuk
 // @license      MIT License
 // @grant        GM.xmlHttpRequest
 // @grant        GM.setClipboard
-// @grant        GM.setValue
-// @grant        GM.getValue
 // @connect      api.here.com
 // @connect      api.visicom.ua
 // @connect      nominatim.openstreetmap.org
