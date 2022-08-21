@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         WME E50 Fetch POI Data
-// @version      0.6.4
+// @version      0.6.5
 // @description  Fetch information about the POI from external sources
 // @author       Anton Shevchuk
 // @license      MIT License
@@ -257,7 +257,6 @@
           responseType: 'json',
           url: url,
           onload: function (response) {
-            // console.log(NAME, uid, url, response.response);
             resolve(response.response)
           },
           onerror: function (error) {
@@ -290,7 +289,7 @@
           this.response = await this.request(lon, lat)
           E50Cache.set(key, this.response)
         }
-        console.log(NAME, this.uid, this.response)
+        // console.log(NAME, this.uid, this.response)
         this.render()
       } catch (e) {
         console.error(NAME, this.uid, e)
@@ -330,10 +329,18 @@
     element (lon, lat, city, street, number, name = '') {
       // Raw data from provider
       let raw = [street, number, name].filter(x => !!x).join(', ')
-      city = normalizeCity(city)
-      street = normalizeStreet(street)
-      number = normalizeNumber(number)
-      name = normalizeName(name)
+      console.groupCollapsed(
+        '%c' + NAME + ': 👀 %c' + [city, street, number, name].join(' '),
+        'color: #0DAD8D; font-weight: bold',
+        'color: dimgray; font-weight: normal'
+      );
+      {
+        city = normalizeCity(city)
+        street = normalizeStreet(street)
+        number = normalizeNumber(number)
+        name = normalizeName(name)
+      }
+      console.groupEnd();
       let title = [street, number, name].filter(x => !!x).join(', ')
       return {
         lat: lat,
@@ -491,7 +498,6 @@
     }
 
     item (res) {
-      console.log(res)
       let city = ''
       let street = ''
       let number = ''
@@ -946,6 +952,12 @@
     let selected = poi.geometry.getCentroid().clone()
     selected.transform('EPSG:900913', 'EPSG:4326')
 
+    console.log(
+      '%c' + NAME + ': 📍 %c' + selected.x + ' ' + selected.y,
+      'color: #0DAD8D; font-weight: bold',
+      'color: dimgray; font-weight: normal'
+    );
+
     if (E50Settings.get('providers').magic) {
       let Magic = new MagicProvider(container)
       Magic.search(selected.x, selected.y)
@@ -1177,7 +1189,7 @@
     if (best > -1) {
       city = cities[best]
     }
-    console.log(NAME, arguments[0], '=>', city)
+    // console.log(arguments[0], city)
     return city
   }
 
@@ -1260,7 +1272,7 @@
         street = streets[best]
       }
     }
-    console.log(NAME, arguments[0], '=>', street)
+    // console.log(arguments[0], street)
     return street
   }
 
@@ -1326,8 +1338,7 @@
     }
 
     let line = new OpenLayers.Geometry.LineString(pointArray)
-    let length = line.getGeodesicLength(W.map.getProjectionObject())
-    return length // multiply by 3.28084 to convert to feet
+    return line.getGeodesicLength(W.map.getProjectionObject()) // multiply by 3.28084 to convert to feet
   }
 
   /**
@@ -1427,6 +1438,7 @@
 
     for (let i = 0; i < targetStrings.length; i++) {
       let rating = compareTwoStrings(mainString, targetStrings[i])
+      // console.log(mainString, '🆚', targetStrings[i], ':', rating)
       if (rating > bestMatchRating) {
         bestMatch = targetStrings[i]
         bestMatchRating = rating
@@ -1434,10 +1446,10 @@
       }
     }
     if (bestMatch === '' || bestMatchRating < 0.35) {
-      console.log(NAME, mainString, 'not matched', targetStrings)
+      console.log('❌', mainString, '🆚', targetStrings)
       return -1
     } else {
-      console.log(NAME, mainString, '<=>', bestMatch, '=', bestMatchRating)
+      console.log('✅', mainString, '🆚', bestMatch, ':', bestMatchRating)
       return bestMatchIndex
     }
   }
