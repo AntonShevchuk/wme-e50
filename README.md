@@ -7,6 +7,10 @@ Fetch information about the POI from external sources
 
 ![](settings.png)
 
+## Console
+
+![](console.png)
+
 ## Links
 Author homepage: http://anton.shevchuk.name/  
 Script homepage: https://github.com/AntonShevchuk/wme-e50/  

@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         WME E50 Fetch POI Data
-// @version      0.6.5
+// @version      0.6.6
 // @description  Fetch information about the POI from external sources
 // @author       Anton Shevchuk
 // @license      MIT License
@@ -983,7 +983,7 @@
 
     let providers = [];
 
-    console.group(
+    console.groupCollapsed(
       '%c' + NAME + ': 📍 %c' + selected.x + ' ' + selected.y,
       'color: #0DAD8D; font-weight: bold',
       'color: dimgray; font-weight: normal'
