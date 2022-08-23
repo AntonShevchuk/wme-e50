@@ -9,7 +9,7 @@
 // @connect      api.here.com
 // @connect      api.visicom.ua
 // @connect      nominatim.openstreetmap.org
-// @connect      catalog.api.2gis.ua
+// @connect      catalog.api.2gis.com
 // @connect      dev.virtualearth.net
 // @match        https://www.waze.com/editor*
 // @match        https://www.waze.com/*/editor*
@@ -246,22 +246,19 @@
      * @param {Object} data
      * @returns {Promise<unknown>}
      */
-    makeRequest (url, data) {
+    async makeRequest (url, data) {
       url += '?'
       url += new URLSearchParams(data).toString()
-      let uid = this.uid
 
       return new Promise((resolve, reject) => {
         GM.xmlHttpRequest({
           method: 'GET',
           responseType: 'json',
           url: url,
-          onload: function (response) {
-            resolve(response.response)
-          },
-          onerror: function (error) {
-            reject(error)
-          }
+          onload: response => resolve(response.response),
+          onabort: response => reject(response),
+          onerror: response => reject(response),
+          ontimeout: response => reject(response),
         })
       })
     }
@@ -281,19 +278,21 @@
      * @return {Promise<void>}
      */
     async search (lon, lat) {
-      try {
-        let key = this.uid + ':' + lon + ',' + lat
-        if (E50Cache.has(key)) {
-          this.response = E50Cache.get(key)
-        } else {
-          this.response = await this.request(lon, lat)
-          E50Cache.set(key, this.response)
-        }
-        // console.log(NAME, this.uid, this.response)
-        this.render()
-      } catch (e) {
-        console.error(NAME, this.uid, e)
+      let key = this.uid + ':' + lon + ',' + lat
+      if (E50Cache.has(key)) {
+        this.response = E50Cache.get(key)
+      } else {
+        this.response = await this.request(lon, lat).catch(e => console.error(this.uid, 'search return error', e))
+        E50Cache.set(key, this.response)
       }
+
+      return new Promise((resolve, reject) => {
+        if (this.response) {
+          resolve()
+        } else {
+          reject()
+        }
+      });
     }
 
     /**
@@ -329,18 +328,14 @@
     element (lon, lat, city, street, number, name = '') {
       // Raw data from provider
       let raw = [street, number, name].filter(x => !!x).join(', ')
-      console.groupCollapsed(
-        '%c' + NAME + ': 👀 %c' + [city, street, number, name].join(' '),
-        'color: #0DAD8D; font-weight: bold',
-        'color: dimgray; font-weight: normal'
-      );
+      console.groupCollapsed(city, street, number, name)
       {
         city = normalizeCity(city)
         street = normalizeStreet(street)
         number = normalizeNumber(number)
         name = normalizeName(name)
       }
-      console.groupEnd();
+      console.groupEnd()
       let title = [street, number, name].filter(x => !!x).join(', ')
       return {
         lat: lat,
@@ -456,8 +451,9 @@
         return []
       }
 
+      console.groupCollapsed(I18n.t(NAME).providers.magic)
       // lon, lat, city, street, number, name
-      return [
+      let result = [
         this.element(
           lon,
           lat,
@@ -467,6 +463,8 @@
           ''
         )
       ]
+      console.groupEnd()
+      return result
     }
   }
 
@@ -488,13 +486,16 @@
         key: 'da' + '0110' + 'e25fac44b1b9c849296387dba8',
       }
 
-      let response = await this.makeRequest(url, data)
+      let response = await this.makeRequest(url, data).catch(e => console.log(this.uid, 'return error', e))
 
-      if (response.features && response.features.length) {
-        return this.collection(response.features)
-      } else {
+      if (!response || !response.features || !response.features.length) {
         return []
       }
+
+      console.groupCollapsed(I18n.t(NAME).providers.visicom)
+      let result = this.collection(response.features)
+      console.groupEnd()
+      return result
     }
 
     item (res) {
@@ -534,13 +535,16 @@
         format: 'json',
       }
 
-      let response = await this.makeRequest(url, data)
+      let response = await this.makeRequest(url, data).catch(e => console.log(this.uid, 'return error', e))
 
-      if (response.address && response.address.house_number) {
-        return [this.item(response)]
-      } else {
+      if (!response || !response.address || !response.address.house_number) {
         return []
       }
+
+      console.groupCollapsed(I18n.t(NAME).providers.osm)
+      let result = [this.item(response)]
+      console.groupEnd()
+      return result
     }
 
     item (res) {
@@ -572,7 +576,7 @@
     }
 
     async request (lon, lat) {
-      let url = 'https://catalog.api.2gis.ua/2.0/geo/search?'
+      let url = 'https://catalog.api.2gis.com/2.0/geo/search'
       let data = {
         point: lon + ',' + lat,
         radius: 20,
@@ -583,12 +587,16 @@
         key: 'rubnkm' + '7490',
       }
 
-      let response = await this.makeRequest(url, data)
+      let response = await this.makeRequest(url, data).catch(e => console.log(this.uid, 'return error', e))
 
-      if (!response.result || !response.result.items.length) {
+      if (!response || !response.result || !response.result.items.length) {
         return []
       }
-      return this.collection(response.result.items)
+
+      console.groupCollapsed(I18n.t(NAME).providers.gis)
+      let result = this.collection(response.result.items)
+      console.groupEnd()
+      return result
     }
 
     item (res) {
@@ -644,12 +652,21 @@
         addressattributes: 'str,hnr'
       }
 
-      let response = await this.makeRequest(url, data)
+      let response = await this.makeRequest(url, data).catch(e => console.log(this.uid, 'return error', e))
 
-      if (!response.Response || !response.Response.View || !response.Response.View || !response.Response.View[0] || !response.Response.View[0].Result) {
+      if (!response
+        || !response.Response
+        || !response.Response.View
+        || !response.Response.View
+        || !response.Response.View[0]
+        || !response.Response.View[0].Result) {
         return []
       }
-      return this.collection(response.Response.View[0].Result.filter(x => x.MatchLevel === 'houseNumber'))
+
+      console.groupCollapsed(I18n.t(NAME).providers.here)
+      let result = this.collection(response.Response.View[0].Result.filter(x => x.MatchLevel === 'houseNumber'))
+      console.groupEnd()
+      return result
     }
 
     item (res) {
@@ -682,12 +699,16 @@
         key: 'AuBfUY8Y1Nzf' + '3sRgceOYxaIg7obOSaqvs' + '0k5dhXWfZyFpT9ArotYNRK7DQ_qZqZw',
       }
 
-      let response = await this.makeRequest(url, data)
+      let response = await this.makeRequest(url, data).catch(e => console.log(this.uid, 'return error', e))
 
       if (!response || !response.resourceSets || !response.resourceSets[0]) {
         return []
       }
-      return this.collection(response.resourceSets[0].resources.filter(el => el.address.addressLine && el.address.addressLine.indexOf(',') > 0))
+
+      console.groupCollapsed(I18n.t(NAME).providers.bing)
+      let result = this.collection(response.resourceSets[0].resources.filter(el => el.address.addressLine && el.address.addressLine.indexOf(',') > 0))
+      console.groupEnd()
+      return result
     }
 
     item (res) {
@@ -722,12 +743,16 @@
         key: 'AIzaSy' + 'CebbES' + 'rWERY1MRZ56gEAfpt7tK2R6hV_I', // extract it from WME
       }
 
-      let response = await this.makeRequest(url, data)
+      let response = await this.makeRequest(url, data).catch(e => console.log(this.uid, 'return error', e))
 
-      if (!response.results || !response.results.length) {
+      if (!response || !response.results || !response.results.length) {
         return []
       }
-      return this.collection(response.results)
+
+      console.groupCollapsed(I18n.t(NAME).providers.google)
+      let result = this.collection(response.results)
+      console.groupEnd()
+      return result
     }
 
     item (res) {
@@ -923,6 +948,10 @@
     return closestSegment
   }
 
+  function errorHandler (provider, error) {
+    console.error(provider, error)
+  }
+
   /**
    * Create and fill modal panel
    * @param event
@@ -952,46 +981,78 @@
     let selected = poi.geometry.getCentroid().clone()
     selected.transform('EPSG:900913', 'EPSG:4326')
 
-    console.log(
+    let providers = [];
+
+    console.group(
       '%c' + NAME + ': 📍 %c' + selected.x + ' ' + selected.y,
       'color: #0DAD8D; font-weight: bold',
       'color: dimgray; font-weight: normal'
-    );
+    )
 
     if (E50Settings.get('providers').magic) {
       let Magic = new MagicProvider(container)
-      Magic.search(selected.x, selected.y)
+      let providerPromise = Magic
+        .search(selected.x, selected.y)
+        .then(() => Magic.render())
+        .catch(e => console.log(':('))
+      providers.push(providerPromise)
     }
 
     if (E50Settings.get('providers').osm) {
       let Osm = new OsmProvider(container)
-      Osm.search(selected.x, selected.y)
+      let providerPromise = Osm
+        .search(selected.x, selected.y)
+        .then(() => Osm.render())
+        .catch(e => console.log(':('))
+      providers.push(providerPromise)
     }
 
     if (E50Settings.get('providers').gis) {
       let Gis = new GisProvider(container)
-      Gis.search(selected.x, selected.y)
+      let providerPromise = Gis
+        .search(selected.x, selected.y)
+        .then(() => Gis.render())
+        .catch(e => console.log(':('))
+      providers.push(providerPromise)
     }
 
     if (E50Settings.get('providers').visicom) {
       let Visicom = new VisicomProvider(container)
-      Visicom.search(selected.x, selected.y)
+      let providerPromise = Visicom
+        .search(selected.x, selected.y)
+        .then(() => Visicom.render())
+        .catch(e => console.log(':('))
+      providers.push(providerPromise)
     }
 
     if (E50Settings.get('providers').here) {
       let Here = new HereProvider(container)
-      Here.search(selected.x, selected.y)
+      let providerPromise = Here
+        .search(selected.x, selected.y)
+        .then(() => Here.render())
+        .catch(e => console.log(':('))
+      providers.push(providerPromise)
     }
 
     if (E50Settings.get('providers').bing) {
       let Bing = new BingProvider(container)
-      Bing.search(selected.x, selected.y)
+      let providerPromise = Bing
+        .search(selected.x, selected.y)
+        .then(() => Bing.render())
+        .catch(e => console.log(':('))
+      providers.push(providerPromise)
     }
 
     if (E50Settings.get('providers').google) {
       let Google = new GoogleProvider(container)
-      Google.search(selected.x, selected.y)
+      let providerPromise = Google
+        .search(selected.x, selected.y)
+        .then(() => Google.render())
+        .catch(e => console.log(':('))
+      providers.push(providerPromise)
     }
+
+    Promise.all(providers).then(() => console.groupEnd());
 
     if (E50Settings.get('options', 'modal')) {
       if (E50Settings.get('options', 'transparent')) {
@@ -1438,7 +1499,6 @@
 
     for (let i = 0; i < targetStrings.length; i++) {
       let rating = compareTwoStrings(mainString, targetStrings[i])
-      // console.log(mainString, '🆚', targetStrings[i], ':', rating)
       if (rating > bestMatchRating) {
         bestMatch = targetStrings[i]
         bestMatchRating = rating
@@ -1453,5 +1513,4 @@
       return bestMatchIndex
     }
   }
-
 })()
