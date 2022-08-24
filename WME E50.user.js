@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         WME E50 Fetch POI Data
-// @version      0.6.7
+// @version      0.6.8
 // @description  Fetch information about the POI from external sources
 // @author       Anton Shevchuk
 // @license      MIT License
@@ -1186,7 +1186,7 @@
       // Create point based on data from external source
       let point = new OL.Geometry.Point(lon, lat).transform('EPSG:4326', 'EPSG:900913')
       // Check intersection with selected POI
-      if (!poi.getPolygonGeometry().intersects(point)) {
+      if (!poi.isPoint() && !poi.getPolygonGeometry().intersects(point)) {
         point = poi.geometry.getCentroid()
       }
       // Create entry point
