@@ -1,16 +1,11 @@
 // ==UserScript==
 // @name         WME E50 Fetch POI Data
-// @version      0.6.8
+// @version      0.7.0
 // @description  Fetch information about the POI from external sources
-// @author       Anton Shevchuk
 // @license      MIT License
-// @grant        GM.xmlHttpRequest
-// @grant        GM.setClipboard
-// @connect      api.here.com
-// @connect      api.visicom.ua
-// @connect      nominatim.openstreetmap.org
-// @connect      catalog.api.2gis.com
-// @connect      dev.virtualearth.net
+// @author       Anton Shevchuk
+// @namespace    https://greasyfork.org/users/227648-anton-shevchuk
+// @supportURL   https://github.com/AntonShevchuk/wme-e50/issues
 // @match        https://www.waze.com/editor*
 // @match        https://www.waze.com/*/editor*
 // @match        https://beta.waze.com/editor*
@@ -18,32 +13,34 @@
 // @exclude      https://www.waze.com/user/editor*
 // @exclude      https://beta.waze.com/user/editor*
 // @icon         data:image/png;base64,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
-// @require      https://greasyfork.org/scripts/389765-common-utils/code/CommonUtils.js?version=1083313
-// @require      https://greasyfork.org/scripts/389117-apihelper/code/APIHelper.js?version=1084940
-// @require      https://greasyfork.org/scripts/389577-apihelperui/code/APIHelperUI.js?version=1082967
+// @connect      api.here.com
+// @connect      api.visicom.ua
+// @connect      nominatim.openstreetmap.org
+// @connect      catalog.api.2gis.com
+// @connect      dev.virtualearth.net
+// @grant        GM.xmlHttpRequest
+// @grant        GM.setClipboard
 // @require      https://greasyfork.org/scripts/38421-wme-utils-navigationpoint/code/WME%20Utils%20-%20NavigationPoint.js?version=251067
-// @namespace    https://greasyfork.org/users/227648
+// @require      https://greasyfork.org/scripts/389765-common-utils/code/CommonUtils.js?version=1083313
+// @require      https://greasyfork.org/scripts/450160-wme-bootstrap/code/WME-Bootstrap.js?version=1087270
+// @require      https://greasyfork.org/scripts/450221-wme-base/code/WME-Base.js?version=1087271
+// @require      https://greasyfork.org/scripts/450320-wme-ui/code/WME-UI.js?version=1087272
 // ==/UserScript==
 
 /* jshint esversion: 8 */
 /* global require */
 /* global $ */
 /* global W */
-/* global OpenLayers */
 /* global I18n */
-/* global APIHelper */
-/* global APIHelperUI */
+/* global OpenLayers */
 /* global NavigationPoint */
-/* global SimpleCache */
-/* global Tools */
-/* global Settings */
+/* global WME, WMEBase, WMEUI, WMEUIHelper */
+/* global Container, Settings, SimpleCache, Tools  */
 
 (function () {
   'use strict'
 
-  let helper, tab, modal, panel
-  let vectorLayer, vectorPoint, vectorLine
-  let OL = OpenLayers
+  let vectorPoint, vectorLine
 
   const NAME = 'E50'
 
@@ -52,9 +49,6 @@
     'en': {
       title: 'Information 📍',
       notFound: 'Not found',
-      description: {
-        copyData: 'Copy name and address of the selected POI to clipboard',
-      },
       options: {
         title: 'Options',
         modal: 'Use modal window',
@@ -83,9 +77,6 @@
     'uk': {
       title: 'Інформація 📍',
       notFound: 'Нічого не знайдено',
-      description: {
-        copyData: 'Копіювати до буферу обміну назву та адресу обраного POI',
-      },
       options: {
         title: 'Налаштування',
         modal: 'Використовувати окрему панель',
@@ -114,9 +105,6 @@
     'ru': {
       title: 'Информация 📍',
       notFound: 'Ничего не найдено',
-      description: {
-        copyData: 'Копировать в буфер обмена название и адрес выбранного POI',
-      },
       options: {
         title: 'Настройки',
         modal: 'Использовать отдельную панель',
@@ -145,9 +133,6 @@
     'fr': {
       title: 'Informations 📍',
       notFound: 'Lieu inconnu',
-      description: {
-        copyData: 'Copier le nom et l\'adresse du POI dans le presse-papier',
-      },
       options: {
         title: 'Réglages',
         modal: 'Activer la fenêtre',
@@ -175,7 +160,7 @@
     }
   }
 
-  const settings = {
+  const SETTINGS = {
     options: {
       modal: true,
       transparent: false,
@@ -191,21 +176,20 @@
       here: true,
       google: true,
       visicom: false,
-    },
-    region: {
-      // Ukraine
-      232: {
-        country: 'uk',
-        language: 'ua',
-        locale: 'uk_UA'
-      }
+    }
+  }
+
+  const LOCALE = {
+    // Ukraine
+    232: {
+      country: 'uk',
+      language: 'ua',
+      locale: 'uk_UA'
     }
   }
 
   // OpenLayer styles
-  APIHelper.bootstrap()
-  APIHelper.addTranslation(NAME, TRANSLATION)
-  APIHelper.addStyle(
+  const STYLE =
     '.e50 legend { cursor:pointer; font-size: 12px; font-weight: bold; width: auto; text-align: right; border: 0; margin: 0; padding: 0 8px; }' +
     '.e50 fieldset { border: 1px solid #ddd; padding: 4px; }' +
     '.e50 fieldset.e50 div.controls label { white-space: normal; }' +
@@ -217,24 +201,215 @@
     '.e50 li a.noaddress:hover { background: rgba(255, 255, 200, 1) }' +
     '#panel-container .archive-panel .body { overflow-x: auto; max-height: 420px; }' +
     '.e50 div.controls:empty, #panel-container .archive-panel .body:empty { min-height: 20px; }' +
-    '.e50 div.controls:empty::after, #panel-container .archive-panel .body:empty::after { color: #ccc; content: "' + I18n.t(NAME).notFound + '" }'
-  )
+    '.e50 div.controls:empty::after, #panel-container .archive-panel .body:empty::after { color: #ccc; content: "' + I18n.t(NAME).notFound + '" }' +
+    'p.e50-info { border-top: 1px solid #ccc; color: #777; font-size: x-small; margin-top: 15px; padding-top: 10px; text-align: center; }'
+
+  WMEUI.addTranslation(NAME, TRANSLATION)
+  WMEUI.addStyle(STYLE)
 
   let WazeActionUpdateObject
   let WazeActionUpdateFeatureAddress
 
-  let E50Cache = new SimpleCache()
-  let E50Settings = new Settings(NAME, settings)
+  let E50Instance, E50Cache, vectorLayer
 
-  let country = 232 // W.model.getTopCountry().getID() // default is Ukraine
+  class E50 extends WMEBase {
+    constructor (name) {
+      super(name)
+
+      this.country = W.model.getTopCountry().getID() // default 232 is Ukraine
+
+      this.settings = new Settings(NAME, SETTINGS)
+
+      this.helper = new WMEUIHelper(NAME)
+
+      this.modal = this.helper.createModal(I18n.t(NAME).title)
+
+      this.panel = this.helper.createPanel(I18n.t(NAME).title)
+
+      this.tab = this.helper.createTab(
+        I18n.t(NAME).title,
+        null,
+        { icon: '<i class="w-icon panel-header-component-icon w-icon-suggestion-fill"></i>' }
+      )
+
+      // Setup options
+      let fsOptions = this.helper.createFieldset(I18n.t(NAME).options.title)
+      let options = this.settings.get('options')
+      for (let item in options) {
+        if (options.hasOwnProperty(item)) {
+          fsOptions.addCheckbox(
+            item,
+            I18n.t(NAME).options[item],
+            I18n.t(NAME).options[item],
+            (event) => this.settings.set(['options', item], event.target.checked),
+            this.settings.get('options', item)
+          )
+        }
+      }
+      this.tab.addElement(fsOptions)
+
+      // Setup providers settings
+      let fsProviders = this.helper.createFieldset(I18n.t(NAME).providers.title)
+      let providers = this.settings.get('providers')
+      for (let item in providers) {
+        if (providers.hasOwnProperty(item)) {
+          fsProviders.addCheckbox(
+            item,
+            I18n.t(NAME).providers[item],
+            I18n.t(NAME).providers[item],
+            (event) => this.settings.set(['providers', item], event.target.checked),
+            this.settings.get('providers', item)
+          )
+        }
+      }
+      this.tab.addElement(fsProviders)
+
+      this.tab.addText(
+        'info',
+        '<a href="' + GM_info.scriptUpdateURL + '">' + GM_info.script.name + '</a> ' + GM_info.script.version
+      )
+
+      this.tab.inject()
+    }
+
+    /**
+     * Handler for `none.wme` event
+     * @param {jQuery.Event} event
+     * @return {Null}
+     */
+    onNone (event) {
+      document.getElementById('panel-container').innerHTML = ''
+    }
+
+    /**
+     * Handler for `venue.wme` event
+     *  - create and fill modal panel
+     *
+     * @param {jQuery.Event} event
+     * @param {HTMLElement} element
+     * @param {W.model} model
+     * @return {null|void}
+     */
+    onVenue (event, element, model) {
+      let container, parent
+      if (this.settings.get('options', 'modal')) {
+        parent = this.modal.html()
+        container = parent.querySelector('.body')
+      } else {
+        parent = this.panel.html()
+        container = parent.querySelector('.controls')
+      }
+
+      // Clear container
+      while (container.hasChildNodes()) {
+        container.removeChild(container.lastChild)
+      }
+
+      let poi = getSelectedPOI()
+
+      if (!poi) {
+        return
+      }
+
+      let selected = poi.geometry.getCentroid().clone()
+      selected.transform('EPSG:900913', 'EPSG:4326')
+
+      let providers = []
+
+      console.groupCollapsed(
+        '%c' + NAME + ': 📍 %c' + selected.x + ' ' + selected.y,
+        'color: #0DAD8D; font-weight: bold',
+        'color: dimgray; font-weight: normal'
+      )
+
+      let settings = LOCALE[this.country]
+
+      if (this.settings.get('providers', 'magic')) {
+        let Magic = new MagicProvider(container, settings)
+        let providerPromise = Magic
+          .search(selected.x, selected.y)
+          .then(() => Magic.render())
+          .catch(e => console.log(':('))
+        providers.push(providerPromise)
+      }
+
+      if (this.settings.get('providers', 'osm')) {
+        let Osm = new OsmProvider(container, settings)
+        let providerPromise = Osm
+          .search(selected.x, selected.y)
+          .then(() => Osm.render())
+          .catch(e => console.log(':('))
+        providers.push(providerPromise)
+      }
+
+      if (this.settings.get('providers', 'gis')) {
+        let Gis = new GisProvider(container, settings)
+        let providerPromise = Gis
+          .search(selected.x, selected.y)
+          .then(() => Gis.render())
+          .catch(e => console.log(':('))
+        providers.push(providerPromise)
+      }
+
+      if (this.settings.get('providers', 'visicom')) {
+        let Visicom = new VisicomProvider(container, settings)
+        let providerPromise = Visicom
+          .search(selected.x, selected.y)
+          .then(() => Visicom.render())
+          .catch(e => console.log(':('))
+        providers.push(providerPromise)
+      }
+
+      if (this.settings.get('providers', 'here')) {
+        let Here = new HereProvider(container, settings)
+        let providerPromise = Here
+          .search(selected.x, selected.y)
+          .then(() => Here.render())
+          .catch(e => console.log(':('))
+        providers.push(providerPromise)
+      }
+
+      if (this.settings.get('providers', 'bing')) {
+        let Bing = new BingProvider(container, settings)
+        let providerPromise = Bing
+          .search(selected.x, selected.y)
+          .then(() => Bing.render())
+          .catch(e => console.log(':('))
+        providers.push(providerPromise)
+      }
+
+      if (this.settings.get('providers', 'google')) {
+        let Google = new GoogleProvider(container, settings)
+        let providerPromise = Google
+          .search(selected.x, selected.y)
+          .then(() => Google.render())
+          .catch(e => console.log(':('))
+        providers.push(providerPromise)
+      }
+
+      Promise.all(providers).then(() => console.groupEnd())
+
+      if (this.settings.get('options', 'modal')) {
+        if (this.settings.get('options', 'transparent')) {
+          parent.style.opacity = 0.6
+          parent.onmouseover = () => (parent.style.opacity = 1)
+          parent.onmouseout = () => (parent.style.opacity = 0.6)
+        }
+        this.modal.container().append(parent)
+      } else {
+        element.prepend(parent)
+      }
+    }
+  }
 
   /**
    * Basic Provider class
    */
   class Provider {
-    constructor (uid, container) {
+    constructor (uid, container, settings) {
       this.uid = uid
       this.response = []
+      this.settings = settings
       // prepare DOM
       this.panel = this._panel()
       this.container = container
@@ -429,14 +604,14 @@
    * Based on closest segment and city
    */
   class MagicProvider extends Provider {
-    constructor (container) {
-      super('Magic', container)
+    constructor (container, settings) {
+      super('Magic', container, settings)
     }
 
     async request (lon, lat) {
       let city = ''
       let street = ''
-      let segment = findClosestSegment(new OL.Geometry.Point(lon, lat).transform('EPSG:4326', 'EPSG:900913'), true, true)
+      let segment = findClosestSegment(new OpenLayers.Geometry.Point(lon, lat).transform('EPSG:4326', 'EPSG:900913'), true, true)
       if (segment) {
         let address = segment.getAddress()
         city = address.attributes.city.attributes.name
@@ -472,8 +647,8 @@
    * visicom.ua
    */
   class VisicomProvider extends Provider {
-    constructor (container) {
-      super('Visicom', container)
+    constructor (container, settings) {
+      super('Visicom', container, settings)
     }
 
     async request (lon, lat) {
@@ -519,8 +694,8 @@
    * Open Street Map
    */
   class OsmProvider extends Provider {
-    constructor (container) {
-      super('OSM', container)
+    constructor (container, settings) {
+      super('OSM', container, settings)
     }
 
     async request (lon, lat) {
@@ -530,8 +705,8 @@
         lat: lat,
         zoom: 18,
         addressdetails: 1,
-        countrycodes: settings.region[country]['language'],
-        'accept-language': settings.region[country]['locale'],
+        countrycodes: this.settings.language,
+        'accept-language': this.settings.locale,
         format: 'json',
       }
 
@@ -571,8 +746,8 @@
    * @link https://docs.2gis.com/ru/api/search/geocoder/reference/2.0/geo/search#/default/get_2_0_geo_search
    */
   class GisProvider extends Provider {
-    constructor (container) {
-      super('2Gis', container)
+    constructor (container, settings) {
+      super('2Gis', container, settings)
     }
 
     async request (lon, lat) {
@@ -582,7 +757,7 @@
         radius: 20,
         type: 'building',
         fields: 'items.address,items.adm_div,items.geometry.centroid',
-        locale: settings.region[country]['locale'],
+        locale: this.settings.locale,
         format: 'json',
         key: 'rubnkm' + '7490',
       }
@@ -637,8 +812,8 @@
    * @link https://developer.here.com/documentation/geocoder/topics/quick-start-geocode.html
    */
   class HereProvider extends Provider {
-    constructor (container) {
-      super('Here', container)
+    constructor (container, settings, country) {
+      super('Here', container, settings, country)
     }
 
     async request (lon, lat) {
@@ -687,15 +862,15 @@
    * http://dev.virtualearth.net/REST/v1/Locations/50.03539,36.34732?o=xml&key=AuBfUY8Y1Nzf3sRgceOYxaIg7obOSaqvs0k5dhXWfZyFpT9ArotYNRK7DQ_qZqZw&c=uk&includeEntityTypes=Address
    */
   class BingProvider extends Provider {
-    constructor (container) {
-      super('Bing', container)
+    constructor (container, settings) {
+      super('Bing', container, settings)
     }
 
     async request (lon, lat) {
       let url = 'https://dev.virtualearth.net/REST/v1/Locations/' + lat + ',' + lon
       let data = {
         includeEntityTypes: 'Address',
-        c: settings.region[country]['country'],
+        c: this.settings.country,
         key: 'AuBfUY8Y1Nzf' + '3sRgceOYxaIg7obOSaqvs' + '0k5dhXWfZyFpT9ArotYNRK7DQ_qZqZw',
       }
 
@@ -728,8 +903,8 @@
    * @link https://developers.google.com/places/web-service/search
    */
   class GoogleProvider extends Provider {
-    constructor (container) {
-      super('Google', container)
+    constructor (container, settings) {
+      super('Google', container, settings)
     }
 
     async request (lon, lat) {
@@ -739,7 +914,7 @@
         radius: 40,
         fields: 'geometry,formatted_address',
         types: 'point_of_interest',
-        language: settings.region[country]['country'],
+        language: this.settings.country,
         key: 'AIzaSy' + 'CebbES' + 'rWERY1MRZ56gEAfpt7tK2R6hV_I', // extract it from WME
       }
 
@@ -776,100 +951,20 @@
   }
 
   $(document)
-    .on('init.apihelper', ready)
-    .on('none.apihelper', clearPanel)
-    .on('landmark.apihelper', landmarkPanel)
+    .on('bootstrap.wme', ready)
     .on('click', '.' + NAME + '-link', applyData)
     .on('mouseenter', '.' + NAME + '-link', showVector)
     .on('mouseleave', '.' + NAME + '-link', hideVector)
+    .on('none.wme', hideVector)
 
-  $(window).on('beforeunload', () => E50Settings.save())
+  $(window).on('beforeunload', () => E50Instance.settings.save())
 
   function ready () {
     WazeActionUpdateObject = require('Waze/Action/UpdateObject')
     WazeActionUpdateFeatureAddress = require('Waze/Action/UpdateFeatureAddress')
 
-    helper = new APIHelperUI(NAME)
-
-    modal = helper.createModal(I18n.t(NAME).title)
-
-    panel = helper.createPanel(I18n.t(NAME).title)
-
-    tab = helper.createTab(
-      I18n.t(NAME).title,
-      null,
-      '<i class="w-icon panel-header-component-icon w-icon-suggestion-fill"></i>'
-    )
-
-    // Setup options
-    let fsOptions = helper.createFieldset(I18n.t(NAME).options.title)
-    let options = E50Settings.get('options')
-    for (let item in options) {
-      if (options.hasOwnProperty(item)) {
-        fsOptions.addCheckbox(item, I18n.t(NAME).options[item], I18n.t(NAME).options[item], function (event) {
-          E50Settings.set(['options', item], event.target.checked)
-        }, E50Settings.get('options', item))
-      }
-    }
-    tab.addElement(fsOptions)
-
-    // Setup providers settings
-    let fsProviders = helper.createFieldset(I18n.t(NAME).providers.title)
-    let providers = E50Settings.get('providers')
-    for (let item in providers) {
-      if (providers.hasOwnProperty(item)) {
-        fsProviders.addCheckbox(item, I18n.t(NAME).providers[item], I18n.t(NAME).providers[item], function (event) {
-          E50Settings.set(['providers', item], event.target.checked)
-        }, E50Settings.get('providers', item))
-      }
-    }
-    tab.addElement(fsProviders)
-
-    tab.inject()
-
-    // Shortcut for copy POI data to clipboard
-    new APIHelperUIShortcut(
-      NAME + '-clipboard',
-      I18n.t(NAME).description.copyData,
-      NAME,
-      NAME,
-      'C+B',
-      function () {
-        if (!W.selectionManager.hasSelectedFeatures() ||
-          W.selectionManager.getSelectedFeatures()[0].model.type !== 'venue') {
-          return
-        }
-        let poi = W.selectionManager.getSelectedFeatures()[0].model
-        let data = [
-          poi.attributes.name,
-          poi.getAddress().attributes.houseNumber,
-          poi.getAddress().getStreet().name,
-          poi.getAddress().getCity().getName(),
-        ]
-        data = data.filter(x => !!x)
-        data = data.filter((v, i, a) => a.indexOf(v) === i)
-
-        toClipboard(data.join(' '))
-      },
-      null
-    ).add()
-
-    // Create layer for vectors
-    vectorLayer = new OL.Layer.Vector('E50VectorLayer', {
-      displayInLayerSwitcher: false,
-      uniqueName: '__E50VectorLayer'
-    })
-
-    W.map.addLayer(vectorLayer)
-    country = 232 // W.model.getTopCountry().getID(); // default is Ukraine
-  }
-
-  /**
-   * Clear modal panel
-   */
-  function clearPanel () {
-    document.getElementById('panel-container').innerHTML = ''
-    hideVector()
+    E50Instance = new E50(NAME)
+    E50Cache = new SimpleCache()
   }
 
   /**
@@ -877,16 +972,15 @@
    * @return {null|Object}
    */
   function getSelectedPOI () {
-    let except = ['NATURAL_FEATURES']
-    let elements = W.selectionManager.getSelectedFeatures().map((x) => x.model).filter((el) => el.type === 'venue')
-    if (except.length) {
-      elements = elements.filter(model => except.indexOf(model.getMainCategory()) === -1)
-    }
-    if (elements.length === 0) {
+    let venue = WME.getSelectedVenue()
+    if (!venue) {
       return null
-    } else {
-      return elements[0]
     }
+    let except = ['NATURAL_FEATURES']
+    if (except.indexOf(venue.getMainCategory()) === -1) {
+      return venue
+    }
+    return null
   }
 
   /**
@@ -913,11 +1007,11 @@
   /**
    * Finds the closest on-screen drivable segment to the given point, ignoring PLR and PR segments if the options are set
    * @function WazeWrap.Geometry.findClosestSegment
-   * @param {OpenLayers.Geometry.Point} The given point to find the closest segment to
-   * @param {boolean} If true, Parking Lot Road segments will be ignored when finding the closest segment
-   * @param {boolean} If true, Private Road segments will be ignored when finding the closest segment
+   * @param {OpenLayers.Geometry.Point} geometry The given point to find the closest segment to
+   * @param {boolean} ignorePLR If true, Parking Lot Road segments will be ignored when finding the closest segment
+   * @param {boolean} ignoreUnnamedPR If true, Private Road segments will be ignored when finding the closest segment
    */
-  function findClosestSegment (mygeometry, ignorePLR, ignoreUnnamedPR) {
+  function findClosestSegment (geometry, ignorePLR, ignoreUnnamedPR) {
     let onscreenSegments = getOnscreenSegments()
     let minDistance = Infinity
     let closestSegment
@@ -937,7 +1031,7 @@
         if (segmentType === 17 && W.model.streets.getObjectById(onscreenSegments[s].attributes.primaryStreetID).name === null) //PR
           continue
 
-      let distanceToSegment = mygeometry.distanceTo(onscreenSegments[s].geometry, { details: true })
+      let distanceToSegment = geometry.distanceTo(onscreenSegments[s].geometry, { details: true })
 
       if (distanceToSegment.distance < minDistance) {
         minDistance = distanceToSegment.distance
@@ -946,124 +1040,6 @@
       }
     }
     return closestSegment
-  }
-
-  function errorHandler (provider, error) {
-    console.error(provider, error)
-  }
-
-  /**
-   * Create and fill modal panel
-   * @param event
-   * @param element
-   */
-  function landmarkPanel (event, element) {
-    let container, parent
-    if (E50Settings.get('options', 'modal')) {
-      parent = modal.html()
-      container = parent.querySelector('.body')
-    } else {
-      parent = panel.html()
-      container = parent.querySelector('.controls')
-    }
-
-    // Clear container
-    while (container.hasChildNodes()) {
-      container.removeChild(container.lastChild)
-    }
-
-    let poi = getSelectedPOI()
-
-    if (!poi) {
-      return
-    }
-
-    let selected = poi.geometry.getCentroid().clone()
-    selected.transform('EPSG:900913', 'EPSG:4326')
-
-    let providers = []
-
-    console.groupCollapsed(
-      '%c' + NAME + ': 📍 %c' + selected.x + ' ' + selected.y,
-      'color: #0DAD8D; font-weight: bold',
-      'color: dimgray; font-weight: normal'
-    )
-
-    if (E50Settings.get('providers').magic) {
-      let Magic = new MagicProvider(container)
-      let providerPromise = Magic
-        .search(selected.x, selected.y)
-        .then(() => Magic.render())
-        .catch(e => console.log(':('))
-      providers.push(providerPromise)
-    }
-
-    if (E50Settings.get('providers').osm) {
-      let Osm = new OsmProvider(container)
-      let providerPromise = Osm
-        .search(selected.x, selected.y)
-        .then(() => Osm.render())
-        .catch(e => console.log(':('))
-      providers.push(providerPromise)
-    }
-
-    if (E50Settings.get('providers').gis) {
-      let Gis = new GisProvider(container)
-      let providerPromise = Gis
-        .search(selected.x, selected.y)
-        .then(() => Gis.render())
-        .catch(e => console.log(':('))
-      providers.push(providerPromise)
-    }
-
-    if (E50Settings.get('providers').visicom) {
-      let Visicom = new VisicomProvider(container)
-      let providerPromise = Visicom
-        .search(selected.x, selected.y)
-        .then(() => Visicom.render())
-        .catch(e => console.log(':('))
-      providers.push(providerPromise)
-    }
-
-    if (E50Settings.get('providers').here) {
-      let Here = new HereProvider(container)
-      let providerPromise = Here
-        .search(selected.x, selected.y)
-        .then(() => Here.render())
-        .catch(e => console.log(':('))
-      providers.push(providerPromise)
-    }
-
-    if (E50Settings.get('providers').bing) {
-      let Bing = new BingProvider(container)
-      let providerPromise = Bing
-        .search(selected.x, selected.y)
-        .then(() => Bing.render())
-        .catch(e => console.log(':('))
-      providers.push(providerPromise)
-    }
-
-    if (E50Settings.get('providers').google) {
-      let Google = new GoogleProvider(container)
-      let providerPromise = Google
-        .search(selected.x, selected.y)
-        .then(() => Google.render())
-        .catch(e => console.log(':('))
-      providers.push(providerPromise)
-    }
-
-    Promise.all(providers).then(() => console.groupEnd())
-
-    if (E50Settings.get('options', 'modal')) {
-      if (E50Settings.get('options', 'transparent')) {
-        parent.style.opacity = 0.6
-        parent.onmouseover = () => (parent.style.opacity = 1)
-        parent.onmouseout = () => (parent.style.opacity = 0.6)
-      }
-      modal.container().append(parent)
-    } else {
-      element.prepend(parent)
-    }
   }
 
   /**
@@ -1085,7 +1061,7 @@
     let street = this.dataset.street
     let number = this.dataset.number
 
-    if (E50Settings.get('options', 'copyData')) {
+    if (E50Instance.settings.get('options', 'copyData')) {
       toClipboard([name, number, street, city].filter(x => !!x).join(' '))
     }
 
@@ -1167,7 +1143,11 @@
       // Check number for invalid format for Waze
       if ((new RegExp('^[0-9]+[а-яі][к|/][0-9]+$', 'i')).test(number)) {
         // Skip this step
-        console.log(NAME, 'skipped «' + number + '»')
+        console.log(
+          '%c' + NAME + ': %cskipped «' + number + '»',
+          'color: #0DAD8D; font-weight: bold',
+          'color: dimgray; font-weight: normal'
+        )
       } else if (addressHN) {
         if (addressHN !== number &&
           window.confirm(I18n.t(NAME).questions.changeNumber + '\n«' + addressHN + '» ⟶ «' + number + '»?')) {
@@ -1182,9 +1162,9 @@
     }
 
     // If no entry point we would create it
-    if (E50Settings.get('options', 'entryPoint') && poi.attributes.entryExitPoints.length === 0) {
+    if (E50Instance.settings.get('options', 'entryPoint') && poi.attributes.entryExitPoints.length === 0) {
       // Create point based on data from external source
-      let point = new OL.Geometry.Point(lon, lat).transform('EPSG:4326', 'EPSG:900913')
+      let point = new OpenLayers.Geometry.Point(lon, lat).transform('EPSG:4326', 'EPSG:900913')
       // Check intersection with selected POI
       if (!poi.isPoint() && !poi.getPolygonGeometry().intersects(point)) {
         point = poi.geometry.getCentroid()
@@ -1195,7 +1175,7 @@
     }
 
     // Lock to level 2
-    if (E50Settings.get('options', 'lock') && poi.attributes.lockRank < 1 && W.loginManager.user.getRank() > 0) {
+    if (E50Instance.settings.get('options', 'lock') && poi.attributes.lockRank < 1 && W.loginManager.user.getRank() > 0) {
       W.model.actionManager.add(new WazeActionUpdateObject(poi, { lockRank: 1 }))
     }
 
@@ -1385,7 +1365,11 @@
     text = normalizeString(text)
     text = text.replace(/'/g, '')
     GM.setClipboard(text)
-    console.log(NAME, 'copied «' + text + '»')
+    console.log(
+      '%c' + NAME + ': %ccopied «' + text + '»',
+      'color: #0DAD8D; font-weight: bold',
+      'color: dimgray; font-weight: normal'
+    )
   }
 
   /**
@@ -1403,6 +1387,23 @@
   }
 
   /**
+   * Get vector layer
+   * @return {OpenLayers.Layer.Vector}
+   */
+  function getVectorLayer () {
+    if (!vectorLayer) {
+      // Create layer for vectors
+      vectorLayer = new OpenLayers.Layer.Vector('E50VectorLayer', {
+        displayInLayerSwitcher: false,
+        uniqueName: '__E50VectorLayer'
+      })
+
+      W.map.addLayer(vectorLayer)
+    }
+    return vectorLayer
+  }
+
+  /**
    * Show vector from centr of the selected POI to point by lon and lat
    */
   function showVector () {
@@ -1411,10 +1412,10 @@
       return
     }
     let from = poi.geometry.getCentroid()
-    let to = new OL.Geometry.Point(this.dataset.lon, this.dataset.lat).transform('EPSG:4326', 'EPSG:900913')
+    let to = new OpenLayers.Geometry.Point(this.dataset.lon, this.dataset.lat).transform('EPSG:4326', 'EPSG:900913')
     let distance = Math.round(calculateDistance([to, from]))
 
-    vectorLine = new OL.Feature.Vector(new OL.Geometry.LineString([from, to]), {}, {
+    vectorLine = new OpenLayers.Feature.Vector(new OpenLayers.Geometry.LineString([from, to]), {}, {
       strokeWidth: 4,
       strokeColor: '#fff',
       strokeLinecap: 'round',
@@ -1429,7 +1430,7 @@
       fontWeight: 'bold',
       labelYOffset: 24
     })
-    vectorPoint = new OL.Feature.Vector(to, {}, {
+    vectorPoint = new OpenLayers.Feature.Vector(to, {}, {
       pointRadius: 8,
       fillOpacity: 0.5,
       fillColor: '#fff',
@@ -1437,17 +1438,19 @@
       strokeWidth: 2,
       strokeLinecap: 'round'
     })
-    vectorLayer.addFeatures([vectorLine, vectorPoint])
-    vectorLayer.setZIndex(1001)
-    vectorLayer.setVisibility(true)
+    getVectorLayer().addFeatures([vectorLine, vectorPoint])
+    getVectorLayer().setZIndex(1001)
+    getVectorLayer().setVisibility(true)
   }
 
   /**
    * Hide and clear all vectors
    */
   function hideVector () {
-    vectorLayer.removeAllFeatures()
-    vectorLayer.setVisibility(false)
+    if (vectorLayer) {
+      vectorLayer.removeAllFeatures()
+      vectorLayer.setVisibility(false)
+    }
   }
 
   /**
