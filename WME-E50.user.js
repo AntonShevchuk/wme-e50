@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         WME E50 Fetch POI Data
-// @version      0.7.1
+// @version      0.7.2
 // @description  Fetch information about the POI from external sources
 // @license      MIT License
 // @author       Anton Shevchuk
@@ -23,7 +23,7 @@
 // @require      https://greasyfork.org/scripts/389765-common-utils/code/CommonUtils.js?version=1090053
 // @require      https://greasyfork.org/scripts/450160-wme-bootstrap/code/WME-Bootstrap.js?version=1090054
 // @require      https://greasyfork.org/scripts/450221-wme-base/code/WME-Base.js?version=1090055
-// @require      https://greasyfork.org/scripts/450320-wme-ui/code/WME-UI.js?version=1090056
+// @require      https://greasyfork.org/scripts/450320-wme-ui/code/WME-UI.js?version=1091627
 // @require      https://greasyfork.org/scripts/38421-wme-utils-navigationpoint/code/WME%20Utils%20-%20NavigationPoint.js?version=251067
 // ==/UserScript==
 
@@ -56,6 +56,7 @@
         entryPoint: 'Create Entry Point if not exists',
         copyData: 'Copy POI data to clipboard on click',
         lock: 'Lock POI to 2 level',
+        keys: 'API keys',
       },
       providers: {
         title: 'Providers',
@@ -84,6 +85,7 @@
         entryPoint: 'Створювати точку в\'їзду, якщо відсутня',
         copyData: 'При виборі, копіювати до буферу обміну назву та адресу POI',
         lock: 'Блокувати POI 2-м рівнем',
+        keys: 'Ключі до API',
       },
       providers: {
         title: 'Джерела',
@@ -112,6 +114,7 @@
         entryPoint: 'Создавать точку въезда если отсутствует',
         copyData: 'При виборе, копировать в буфер обмена название и адрес POI',
         lock: 'Блокировать POI 2-м уровнем',
+        keys: 'Ключи к API',
       },
       providers: {
         title: 'Источники',
@@ -140,6 +143,7 @@
         entryPoint: 'Créer le point d\'entrée s\'il n\'existe pas',
         copyData: 'Copier les informations du POI en cliquant',
         lock: 'Verrouiller le POI au niveau 2',
+        keys: 'API keys',
       },
       providers: {
         title: 'Sources',
@@ -176,6 +180,14 @@
       here: true,
       google: true,
       visicom: false,
+    },
+    keys: {
+      // Russian warship go f*ck yourself!
+      visicom: 'da' + '0110' + 'e25fac44b1b9c849296387dba8',
+      gis: 'rubnkm' + '7490',
+      here: 'GCFmOOrSp8882vFwTxEm' + ':' + 'O-LgGkoRfypnRuik0WjX9A',
+      bing: 'AuBfUY8Y1Nzf' + '3sRgceOYxaIg7obOSaqvs' + '0k5dhXWfZyFpT9ArotYNRK7DQ_qZqZw',
+      google: 'AIzaSy' + 'CebbES' + 'rWERY1MRZ56gEAfpt7tK2R6hV_I', // extract it from WME
     }
   }
 
@@ -202,6 +214,7 @@
     '#panel-container .archive-panel .body { overflow-x: auto; max-height: 420px; }' +
     '.e50 div.controls:empty, #panel-container .archive-panel .body:empty { min-height: 20px; }' +
     '.e50 div.controls:empty::after, #panel-container .archive-panel .body:empty::after { color: #ccc; content: "' + I18n.t(NAME).notFound + '" }' +
+    '.e50 div.controls input[type="text"] { float:right; }' +
     'p.e50-info { border-top: 1px solid #ccc; color: #777; font-size: x-small; margin-top: 15px; padding-top: 10px; text-align: center; }'
 
   WMEUI.addTranslation(NAME, TRANSLATION)
@@ -263,6 +276,22 @@
         }
       }
       this.tab.addElement(fsProviders)
+
+      // Setup providers key's
+      let fsKeys = this.helper.createFieldset(I18n.t(NAME).options.keys)
+      let keys = this.settings.get('keys')
+      for (let item in keys) {
+        if (keys.hasOwnProperty(item)) {
+          fsKeys.addInput(
+            'key-' + item,
+            I18n.t(NAME).providers[item],
+            I18n.t(NAME).providers[item],
+            (event) => this.settings.set(['keys', item], event.target.value),
+            this.settings.get('keys', item)
+          )
+        }
+      }
+      this.tab.addElement(fsKeys)
 
       this.tab.addText(
         'info',
@@ -343,7 +372,7 @@
       }
 
       if (this.settings.get('providers', 'gis')) {
-        let Gis = new GisProvider(container, settings)
+        let Gis = new GisProvider(container, settings, this.settings.get('keys', 'gis'))
         let providerPromise = Gis
           .search(selected.x, selected.y)
           .then(() => Gis.render())
@@ -352,7 +381,7 @@
       }
 
       if (this.settings.get('providers', 'visicom')) {
-        let Visicom = new VisicomProvider(container, settings)
+        let Visicom = new VisicomProvider(container, settings, this.settings.get('keys', 'visicom'))
         let providerPromise = Visicom
           .search(selected.x, selected.y)
           .then(() => Visicom.render())
@@ -361,7 +390,7 @@
       }
 
       if (this.settings.get('providers', 'here')) {
-        let Here = new HereProvider(container, settings)
+        let Here = new HereProvider(container, settings, this.settings.get('keys', 'here'))
         let providerPromise = Here
           .search(selected.x, selected.y)
           .then(() => Here.render())
@@ -370,7 +399,7 @@
       }
 
       if (this.settings.get('providers', 'bing')) {
-        let Bing = new BingProvider(container, settings)
+        let Bing = new BingProvider(container, settings, this.settings.get('keys', 'bing'))
         let providerPromise = Bing
           .search(selected.x, selected.y)
           .then(() => Bing.render())
@@ -379,7 +408,7 @@
       }
 
       if (this.settings.get('providers', 'google')) {
-        let Google = new GoogleProvider(container, settings)
+        let Google = new GoogleProvider(container, settings, this.settings.get('keys', 'google'))
         let providerPromise = Google
           .search(selected.x, selected.y)
           .then(() => Google.render())
@@ -430,7 +459,7 @@
           method: 'GET',
           responseType: 'json',
           url: url,
-          onload: response => resolve(response.response),
+          onload: response => response && response.response && resolve(response.response) || reject(response),
           onabort: response => reject(response),
           onerror: response => reject(response),
           ontimeout: response => reject(response),
@@ -647,8 +676,9 @@
    * visicom.ua
    */
   class VisicomProvider extends Provider {
-    constructor (container, settings) {
+    constructor (container, settings, key) {
       super('Visicom', container, settings)
+      this.key = key
     }
 
     async request (lon, lat) {
@@ -658,7 +688,7 @@
         categories: 'adr_address',
         radius: 50,
         limit: 10,
-        key: 'da' + '0110' + 'e25fac44b1b9c849296387dba8',
+        key: this.key,
       }
 
       let response = await this.makeRequest(url, data).catch(e => console.log(this.uid, 'return error', e))
@@ -746,8 +776,9 @@
    * @link https://docs.2gis.com/ru/api/search/geocoder/reference/2.0/geo/search#/default/get_2_0_geo_search
    */
   class GisProvider extends Provider {
-    constructor (container, settings) {
+    constructor (container, settings, key) {
       super('2Gis', container, settings)
+      this.key = key
     }
 
     async request (lon, lat) {
@@ -759,7 +790,7 @@
         fields: 'items.address,items.adm_div,items.geometry.centroid',
         locale: this.settings.locale,
         format: 'json',
-        key: 'rubnkm' + '7490',
+        key: this.key,
       }
 
       let response = await this.makeRequest(url, data).catch(e => console.log(this.uid, 'return error', e))
@@ -812,15 +843,16 @@
    * @link https://developer.here.com/documentation/geocoder/topics/quick-start-geocode.html
    */
   class HereProvider extends Provider {
-    constructor (container, settings, country) {
-      super('Here', container, settings, country)
+    constructor (container, settings, key) {
+      super('Here', container, settings)
+      this.key = key.split(':')
     }
 
     async request (lon, lat) {
       let url = 'https://reverse.geocoder.api.here.com/6.2/reversegeocode.json'
       let data = {
-        app_id: 'GCFmOOrSp8882vFwTxEm',
-        app_code: 'O-LgGkoRfypnRuik0WjX9A',
+        app_id: this.key[0],
+        app_code: this.key[1],
         prox: lat + ',' + lon + ',10',
         mode: 'retrieveAddresses',
         locationattributes: 'none,ar',
@@ -862,8 +894,9 @@
    * http://dev.virtualearth.net/REST/v1/Locations/50.03539,36.34732?o=xml&key=AuBfUY8Y1Nzf3sRgceOYxaIg7obOSaqvs0k5dhXWfZyFpT9ArotYNRK7DQ_qZqZw&c=uk&includeEntityTypes=Address
    */
   class BingProvider extends Provider {
-    constructor (container, settings) {
+    constructor (container, settings, key) {
       super('Bing', container, settings)
+      this.key = key
     }
 
     async request (lon, lat) {
@@ -871,7 +904,7 @@
       let data = {
         includeEntityTypes: 'Address',
         c: this.settings.country,
-        key: 'AuBfUY8Y1Nzf' + '3sRgceOYxaIg7obOSaqvs' + '0k5dhXWfZyFpT9ArotYNRK7DQ_qZqZw',
+        key: this.key,
       }
 
       let response = await this.makeRequest(url, data).catch(e => console.log(this.uid, 'return error', e))
@@ -903,8 +936,9 @@
    * @link https://developers.google.com/places/web-service/search
    */
   class GoogleProvider extends Provider {
-    constructor (container, settings) {
+    constructor (container, settings, key) {
       super('Google', container, settings)
+      this.key = key
     }
 
     async request (lon, lat) {
@@ -915,7 +949,7 @@
         fields: 'geometry,formatted_address',
         types: 'point_of_interest',
         language: this.settings.country,
-        key: 'AIzaSy' + 'CebbES' + 'rWERY1MRZ56gEAfpt7tK2R6hV_I', // extract it from WME
+        key: this.key,
       }
 
       let response = await this.makeRequest(url, data).catch(e => console.log(this.uid, 'return error', e))
