@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         WME E50 Fetch POI Data
-// @version      0.7.5
+// @version      0.7.6
 // @description  Fetch information about the POI from external sources
 // @license      MIT License
 // @author       Anton Shevchuk
