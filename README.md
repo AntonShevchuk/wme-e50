@@ -3,6 +3,9 @@ Fetch information about the POI from external sources
 
 ![](screenshot.png)
 
+
+![](example.gif)
+
 ## Settings
 
 ![](settings.png)
