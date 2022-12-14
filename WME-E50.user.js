@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         WME E50 Fetch POI Data
-// @version      0.7.7
+// @version      0.7.8
 // @description  Fetch information about the POI from external sources
 // @license      MIT License
 // @author       Anton Shevchuk
@@ -171,11 +171,11 @@
       lock: true,
     },
     providers: {
-      magic: false,
-      osm: true,
-      gis: true,
-      bing: true,
-      here: true,
+      magic: true,
+      osm: false,
+      gis: false,
+      bing: false,
+      here: false,
       google: true,
       visicom: false,
     },
