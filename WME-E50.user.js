@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         WME E50 Fetch POI Data
-// @version      0.7.8
+// @version      0.8.0
 // @description  Fetch information about the POI from external sources
 // @license      MIT License
 // @author       Anton Shevchuk
@@ -18,16 +18,16 @@
 // @grant        GM.xmlHttpRequest
 // @grant        GM.setClipboard
 // @require      https://greasyfork.org/scripts/389765-common-utils/code/CommonUtils.js?version=1090053
-// @require      https://greasyfork.org/scripts/450160-wme-bootstrap/code/WME-Bootstrap.js?version=1126584
+// @require      https://greasyfork.org/scripts/450160-wme-bootstrap/code/WME-Bootstrap.js?version=1128320
 // @require      https://greasyfork.org/scripts/452563-wme/code/WME.js?version=1101598
 // @require      https://greasyfork.org/scripts/450221-wme-base/code/WME-Base.js?version=1101617
-// @require      https://greasyfork.org/scripts/450320-wme-ui/code/WME-UI.js?version=1127621
+// @require      https://greasyfork.org/scripts/450320-wme-ui/code/WME-UI.js?version=1128560
 // @require      https://greasyfork.org/scripts/38421-wme-utils-navigationpoint/code/WME%20Utils%20-%20NavigationPoint.js?version=251067
 // ==/UserScript==
 
 /* jshint esversion: 8 */
 /* global require */
-/* global $ */
+/* global $, jQuery */
 /* global W */
 /* global I18n */
 /* global OpenLayers */
@@ -201,7 +201,7 @@
   // OpenLayer styles
   const STYLE =
     '.e50 legend { cursor:pointer; font-size: 12px; font-weight: bold; width: auto; text-align: right; border: 0; margin: 0; padding: 0 8px; }' +
-    '.e50 fieldset { border: 1px solid #ddd; padding: 4px; }' +
+    '.e50 fieldset { border: 1px solid #ddd; padding: 4px; margin: 4px; }' +
     '.e50 fieldset.e50 div.controls label { white-space: normal; }' +
     '.e50 ul { padding: 0; margin: 0 }' +
     '.e50 li { padding: 0; margin: 0; list-style: none; margin-bottom: 2px }' +
@@ -226,8 +226,6 @@
   class E50 extends WMEBase {
     constructor (name) {
       super(name)
-
-      this.country = W.model.getTopCountry().getID() // default 232 is Ukraine
 
       this.settings = new Settings(NAME, SETTINGS)
 
@@ -300,6 +298,15 @@
     }
 
     /**
+     * Handler for window `beforeunload` event
+     * @param {jQuery.Event} event
+     * @return {Null}
+     */
+    onBeforeUnload (event) {
+      this.settings.save()
+    }
+
+    /**
      * Handler for `none.wme` event
      * @param {jQuery.Event} event
      * @return {Null}
@@ -349,14 +356,16 @@
         'color: dimgray; font-weight: normal'
       )
 
-      let settings = LOCALE[this.country]
+      let country = W.model.getTopCountry().getID() // or 232 is Ukraine
+
+      let settings = LOCALE[country]
 
       if (this.settings.get('providers', 'magic')) {
         let Magic = new MagicProvider(container, settings)
         let providerPromise = Magic
           .search(selected.x, selected.y)
           .then(() => Magic.render())
-          .catch(e => console.log(':('))
+          .catch(() => console.log(':('))
         providers.push(providerPromise)
       }
 
@@ -365,7 +374,7 @@
         let providerPromise = Osm
           .search(selected.x, selected.y)
           .then(() => Osm.render())
-          .catch(e => console.log(':('))
+          .catch(() => console.log(':('))
         providers.push(providerPromise)
       }
 
@@ -374,7 +383,7 @@
         let providerPromise = Gis
           .search(selected.x, selected.y)
           .then(() => Gis.render())
-          .catch(e => console.log(':('))
+          .catch(() => console.log(':('))
         providers.push(providerPromise)
       }
 
@@ -383,7 +392,7 @@
         let providerPromise = Visicom
           .search(selected.x, selected.y)
           .then(() => Visicom.render())
-          .catch(e => console.log(':('))
+          .catch(() => console.log(':('))
         providers.push(providerPromise)
       }
 
@@ -392,7 +401,7 @@
         let providerPromise = Here
           .search(selected.x, selected.y)
           .then(() => Here.render())
-          .catch(e => console.log(':('))
+          .catch(() => console.log(':('))
         providers.push(providerPromise)
       }
 
@@ -401,7 +410,7 @@
         let providerPromise = Bing
           .search(selected.x, selected.y)
           .then(() => Bing.render())
-          .catch(e => console.log(':('))
+          .catch(() => console.log(':('))
         providers.push(providerPromise)
       }
 
@@ -410,7 +419,7 @@
         let providerPromise = Google
           .search(selected.x, selected.y)
           .then(() => Google.render())
-          .catch(e => console.log(':('))
+          .catch(() => console.log(':('))
         providers.push(providerPromise)
       }
 
@@ -989,8 +998,6 @@
     .on('mouseleave', '.' + NAME + '-link', hideVector)
     .on('none.wme', hideVector)
 
-  $(window).on('beforeunload', () => E50Instance.settings.save())
-
   function ready () {
     WazeActionUpdateObject = require('Waze/Action/UpdateObject')
     WazeActionUpdateFeatureAddress = require('Waze/Action/UpdateFeatureAddress')
@@ -1407,7 +1414,7 @@
   /**
    * Calculates the distance between given points, returned in meters
    * @function WazeWrap.Geometry.calculateDistance
-   * @param {OpenLayers.Geometry.Point} An array of OpenLayers.Geometry.Point with which to measure the total distance. A minimum of 2 points is needed.
+   * @param {Array<OpenLayers.Geometry.Point>} pointArray An array of OpenLayers.Geometry.Point with which to measure the total distance. A minimum of 2 points is needed.
    */
   function calculateDistance (pointArray) {
     if (pointArray.length < 2) {
