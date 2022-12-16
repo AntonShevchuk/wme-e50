@@ -15,6 +15,7 @@
 // @connect      nominatim.openstreetmap.org
 // @connect      catalog.api.2gis.com
 // @connect      dev.virtualearth.net
+// @connect      maps.googleapis.com
 // @grant        GM.xmlHttpRequest
 // @grant        GM.setClipboard
 // @require      https://greasyfork.org/scripts/389765-common-utils/code/CommonUtils.js?version=1090053
@@ -185,7 +186,7 @@
       gis: 'rubnkm' + '7490',
       here: 'GCFmOOrSp8882vFwTxEm' + ':' + 'O-LgGkoRfypnRuik0WjX9A',
       bing: 'AuBfUY8Y1Nzf' + '3sRgceOYxaIg7obOSaqvs' + '0k5dhXWfZyFpT9ArotYNRK7DQ_qZqZw',
-      google: 'AIzaSy' + 'CebbES' + 'rWERY1MRZ56gEAfpt7tK2R6hV_I', // extract it from WME
+      google: 'AIzaSyBWB3jiUm1dkFwvJWy4w4ZmO7KPyF4oUa0', // extract it from WME
     }
   }
 
@@ -949,26 +950,42 @@
     }
 
     async request (lon, lat) {
-      let url = 'https://' + location.hostname + '/maps/api/place/nearbysearch/json'
-      let data = {
-        location: lat + ',' + lon,
-        radius: 40,
-        fields: 'geometry,formatted_address',
-        types: 'point_of_interest',
-        language: this.settings.country,
-        key: this.key,
-      }
+      let response = await this.makeAPIRequest(lat, lon).catch(e => console.log(this.uid, 'return error', e))
 
-      let response = await this.makeRequest(url, data).catch(e => console.log(this.uid, 'return error', e))
-
-      if (!response || !response.results || !response.results.length) {
+      if (!response || !response.length) {
         return []
       }
 
       console.groupCollapsed(I18n.t(NAME).providers.google)
-      let result = this.collection(response.results)
+      let result = this.collection(response)
       console.groupEnd()
       return result
+    }
+
+    async makeAPIRequest (lat, lon) {
+      let center = new google.maps.LatLng(lat, lon)
+
+      let map = new google.maps.Map(document.createElement('div'), { center: center });
+
+      let request = {
+        location: center,
+        radius: '100',
+        type: ['point_of_interest'],
+        // doesn't work
+        // fields: ['name', 'address_component', 'geometry'],
+        // language: this.settings.country,
+      };
+
+      let service = new google.maps.places.PlacesService(map);
+      return new Promise((resolve, reject) => {
+        service.nearbySearch(request, (results, status) => {
+          if (status === google.maps.places.PlacesServiceStatus.OK) {
+            resolve(results)
+          } else {
+            reject(status)
+          }
+        });
+      })
     }
 
     item (res) {
@@ -981,8 +998,8 @@
       let city = address[2] ? address[2] : ''
 
       return this.element(
-        res.geometry.location.lng,
-        res.geometry.location.lat,
+        res.geometry.location.lng(),
+        res.geometry.location.lat(),
         city,
         street,
         number,
