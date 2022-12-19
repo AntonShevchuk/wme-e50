@@ -21,7 +21,7 @@
 // @require      https://greasyfork.org/scripts/389765-common-utils/code/CommonUtils.js?version=1090053
 // @require      https://greasyfork.org/scripts/450160-wme-bootstrap/code/WME-Bootstrap.js?version=1128320
 // @require      https://greasyfork.org/scripts/452563-wme/code/WME.js?version=1101598
-// @require      https://greasyfork.org/scripts/450221-wme-base/code/WME-Base.js?version=1101617
+// @require      https://greasyfork.org/scripts/450221-wme-base/code/WME-Base.js?version=1129908
 // @require      https://greasyfork.org/scripts/450320-wme-ui/code/WME-UI.js?version=1128560
 // @require      https://greasyfork.org/scripts/38421-wme-utils-navigationpoint/code/WME%20Utils%20-%20NavigationPoint.js?version=251067
 // ==/UserScript==
@@ -225,32 +225,30 @@
   let E50Instance, E50Cache, vectorLayer
 
   class E50 extends WMEBase {
-    constructor (name) {
-      super(name)
+    constructor (name, settings) {
+      super(name, settings)
 
-      this.settings = new Settings(NAME, SETTINGS)
+      this.helper = new WMEUIHelper(name)
 
-      this.helper = new WMEUIHelper(NAME)
+      this.modal = this.helper.createModal(I18n.t(name).title)
 
-      this.modal = this.helper.createModal(I18n.t(NAME).title)
-
-      this.panel = this.helper.createPanel(I18n.t(NAME).title)
+      this.panel = this.helper.createPanel(I18n.t(name).title)
 
       this.tab = this.helper.createTab(
-        I18n.t(NAME).title,
+        I18n.t(name).title,
         null,
         { icon: '<i class="w-icon panel-header-component-icon w-icon-suggestion-fill"></i>' }
       )
 
       // Setup options
-      let fsOptions = this.helper.createFieldset(I18n.t(NAME).options.title)
+      let fsOptions = this.helper.createFieldset(I18n.t(name).options.title)
       let options = this.settings.get('options')
       for (let item in options) {
         if (options.hasOwnProperty(item)) {
           fsOptions.addCheckbox(
             item,
-            I18n.t(NAME).options[item],
-            I18n.t(NAME).options[item],
+            I18n.t(name).options[item],
+            I18n.t(name).options[item],
             (event) => this.settings.set(['options', item], event.target.checked),
             this.settings.get('options', item)
           )
@@ -259,7 +257,7 @@
       this.tab.addElement(fsOptions)
 
       // Setup providers settings
-      let fsProviders = this.helper.createFieldset(I18n.t(NAME).providers.title)
+      let fsProviders = this.helper.createFieldset(I18n.t(name).providers.title)
       let providers = this.settings.get('providers')
       for (let item in providers) {
         if (providers.hasOwnProperty(item)) {
@@ -275,14 +273,14 @@
       this.tab.addElement(fsProviders)
 
       // Setup providers key's
-      let fsKeys = this.helper.createFieldset(I18n.t(NAME).options.keys)
+      let fsKeys = this.helper.createFieldset(I18n.t(name).options.keys)
       let keys = this.settings.get('keys')
       for (let item in keys) {
         if (keys.hasOwnProperty(item)) {
           fsKeys.addInput(
             'key-' + item,
-            I18n.t(NAME).providers[item],
-            I18n.t(NAME).providers[item],
+            I18n.t(name).providers[item],
+            I18n.t(name).providers[item],
             (event) => this.settings.set(['keys', item], event.target.value),
             this.settings.get('keys', item)
           )
@@ -296,15 +294,6 @@
       )
 
       this.tab.inject()
-    }
-
-    /**
-     * Handler for window `beforeunload` event
-     * @param {jQuery.Event} event
-     * @return {Null}
-     */
-    onBeforeUnload (event) {
-      this.settings.save()
     }
 
     /**
@@ -1019,7 +1008,7 @@
     WazeActionUpdateObject = require('Waze/Action/UpdateObject')
     WazeActionUpdateFeatureAddress = require('Waze/Action/UpdateFeatureAddress')
 
-    E50Instance = new E50(NAME)
+    E50Instance = new E50(NAME, SETTINGS)
     E50Cache = new SimpleCache()
   }
 
