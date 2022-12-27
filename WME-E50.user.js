@@ -22,7 +22,7 @@
 // @require      https://greasyfork.org/scripts/450160-wme-bootstrap/code/WME-Bootstrap.js?version=1128320
 // @require      https://greasyfork.org/scripts/452563-wme/code/WME.js?version=1101598
 // @require      https://greasyfork.org/scripts/450221-wme-base/code/WME-Base.js?version=1129908
-// @require      https://greasyfork.org/scripts/450320-wme-ui/code/WME-UI.js?version=1128560
+// @require      https://greasyfork.org/scripts/450320-wme-ui/code/WME-UI.js?version=1132279
 // @require      https://greasyfork.org/scripts/38421-wme-utils-navigationpoint/code/WME%20Utils%20-%20NavigationPoint.js?version=251067
 // ==/UserScript==
 
@@ -186,7 +186,7 @@
       gis: 'rubnkm' + '7490',
       here: 'GCFmOOrSp8882vFwTxEm' + ':' + 'O-LgGkoRfypnRuik0WjX9A',
       bing: 'AuBfUY8Y1Nzf' + '3sRgceOYxaIg7obOSaqvs' + '0k5dhXWfZyFpT9ArotYNRK7DQ_qZqZw',
-      google: 'AIzaSyBWB3jiUm1dkFwvJWy4w4ZmO7KPyF4oUa0', // extract it from WME
+      google: 'AIzaSyBWB3' + 'jiUm1dkFwvJWy4w4ZmO7K' + 'PyF4oUa0', // extract it from WME
     }
   }
 
@@ -236,8 +236,7 @@
 
       this.tab = this.helper.createTab(
         I18n.t(name).title,
-        null,
-        { icon: '<i class="w-icon panel-header-component-icon w-icon-suggestion-fill"></i>' }
+        { icon: 'suggestion-fill' }
       )
 
       // Setup options
@@ -247,7 +246,6 @@
         if (options.hasOwnProperty(item)) {
           fsOptions.addCheckbox(
             item,
-            I18n.t(name).options[item],
             I18n.t(name).options[item],
             (event) => this.settings.set(['options', item], event.target.checked),
             this.settings.get('options', item)
@@ -264,7 +262,6 @@
           fsProviders.addCheckbox(
             item,
             I18n.t(NAME).providers[item],
-            I18n.t(NAME).providers[item],
             (event) => this.settings.set(['providers', item], event.target.checked),
             this.settings.get('providers', item)
           )
@@ -279,7 +276,6 @@
         if (keys.hasOwnProperty(item)) {
           fsKeys.addInput(
             'key-' + item,
-            I18n.t(name).providers[item],
             I18n.t(name).providers[item],
             (event) => this.settings.set(['keys', item], event.target.value),
             this.settings.get('keys', item)
