@@ -22,7 +22,7 @@
 // @require      https://greasyfork.org/scripts/450160-wme-bootstrap/code/WME-Bootstrap.js?version=1128320
 // @require      https://greasyfork.org/scripts/452563-wme/code/WME.js?version=1101598
 // @require      https://greasyfork.org/scripts/450221-wme-base/code/WME-Base.js?version=1129908
-// @require      https://greasyfork.org/scripts/450320-wme-ui/code/WME-UI.js?version=1132279
+// @require      https://greasyfork.org/scripts/450320-wme-ui/code/WME-UI.js?version=1134661
 // @require      https://greasyfork.org/scripts/38421-wme-utils-navigationpoint/code/WME%20Utils%20-%20NavigationPoint.js?version=251067
 // ==/UserScript==
 
@@ -241,9 +241,8 @@
 
       // Setup options
       let fsOptions = this.helper.createFieldset(I18n.t(name).options.title)
-      let options = this.settings.get('options')
-      for (let item in options) {
-        if (options.hasOwnProperty(item)) {
+      for (let item in settings.options) {
+        if (settings.options.hasOwnProperty(item)) {
           fsOptions.addCheckbox(
             item,
             I18n.t(name).options[item],
@@ -256,9 +255,8 @@
 
       // Setup providers settings
       let fsProviders = this.helper.createFieldset(I18n.t(name).providers.title)
-      let providers = this.settings.get('providers')
-      for (let item in providers) {
-        if (providers.hasOwnProperty(item)) {
+      for (let item in settings.providers) {
+        if (settings.providers.hasOwnProperty(item)) {
           fsProviders.addCheckbox(
             item,
             I18n.t(NAME).providers[item],
