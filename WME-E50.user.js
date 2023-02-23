@@ -3,6 +3,7 @@
 // @name:uk      WME 🇺🇦 E50 Fetch POI Data
 // @version      0.8.1
 // @description  Fetch information about the POI from external sources
+// @description:uk Скрипт дозволяє отримівати інформацію про POI зі сторонніх ресурсів
 // @license      MIT License
 // @author       Anton Shevchuk
 // @namespace    https://greasyfork.org/users/227648-anton-shevchuk
