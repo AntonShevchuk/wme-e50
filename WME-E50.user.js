@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         WME E50 Fetch POI Data
-// @version      0.8.0
+// @version      0.8.1
 // @description  Fetch information about the POI from external sources
 // @license      MIT License
 // @author       Anton Shevchuk
@@ -19,7 +19,7 @@
 // @grant        GM.xmlHttpRequest
 // @grant        GM.setClipboard
 // @require      https://greasyfork.org/scripts/389765-common-utils/code/CommonUtils.js?version=1090053
-// @require      https://greasyfork.org/scripts/450160-wme-bootstrap/code/WME-Bootstrap.js?version=1135567
+// @require      https://greasyfork.org/scripts/450160-wme-bootstrap/code/WME-Bootstrap.js?version=1153357
 // @require      https://greasyfork.org/scripts/452563-wme/code/WME.js?version=1101598
 // @require      https://greasyfork.org/scripts/450221-wme-base/code/WME-Base.js?version=1137043
 // @require      https://greasyfork.org/scripts/450320-wme-ui/code/WME-UI.js?version=1137289
