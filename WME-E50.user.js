@@ -1,5 +1,6 @@
 // ==UserScript==
 // @name         WME E50 Fetch POI Data
+// @name:uk      WME 🇺🇦 E50 Fetch POI Data
 // @version      0.8.1
 // @description  Fetch information about the POI from external sources
 // @license      MIT License
