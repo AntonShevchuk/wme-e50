@@ -1,9 +1,9 @@
 // ==UserScript==
 // @name         WME E50 Fetch POI Data
 // @name:uk      WME 🇺🇦 E50 Fetch POI Data
-// @version      0.8.3
+// @version      0.8.4
 // @description  Fetch information about the POI from external sources
-// @description:uk Скрипт дозволяє отримівати інформацію про POI зі сторонніх ресурсів
+// @description:uk Скрипт дозволяє отримувати інформацію про POI зі сторонніх ресурсів
 // @license      MIT License
 // @author       Anton Shevchuk
 // @namespace    https://greasyfork.org/users/227648-anton-shevchuk
@@ -30,8 +30,8 @@
 
 /* jshint esversion: 8 */
 /* global require */
-/* global $, jQuery */
-/* global W */
+/* global $, jQuery, jQuery.Event */
+/* global W, W.model */
 /* global I18n */
 /* global OpenLayers */
 /* global NavigationPoint */
@@ -74,6 +74,8 @@
         changeCity: 'Are you sure to change the city?',
         changeStreet: 'Are you sure to change the street name?',
         changeNumber: 'Are you sure to change the house number?',
+        notFoundCity: 'City not found in the current location, are you sure to apply this city name?',
+        notFoundStreet: 'Street not found in the current location, are you sure to apply this street name?'
       }
     },
     'uk': {
@@ -103,6 +105,8 @@
         changeCity: 'Ви впевненні що хочете змінити місто?',
         changeStreet: 'Ви впевненні що хочете змінити вулицю?',
         changeNumber: 'Ви впевненні що хочете змінити номер дома?',
+        notFoundCity: 'Ми не знайшли такого міста у поточному місці, ви впевнені, що його треба застосувати?',
+        notFoundStreet: 'Ми не знайшли таку вулицю у поточному місці, ви впевнені, що треба її додати?',
       }
     },
     'ru': {
@@ -132,6 +136,8 @@
         changeCity: 'Ви уверены, что хотите изменить город?',
         changeStreet: 'Ви уверены, что хотите изменить улицу?',
         changeNumber: 'Ви уверены, что хотите изменить номер дома?',
+        notFoundCity: 'Мы не нашли такого города в данной локации, вы уверены что нужно его добавить?',
+        notFoundStreet: 'Мы не нашли такую улицу в данной локации, вы уверены что нужно её добавить?',
       }
     },
     'fr': {
@@ -161,6 +167,8 @@
         changeCity: 'Êtes-vous sûr de changer la ville ?',
         changeStreet: 'Êtes-vous sûr de changer la rue ?',
         changeNumber: 'Êtes-vous sûr de changer le numéro de rue ?',
+        notFoundCity: 'City not found in the current location, are you sure to apply this city name?',
+        notFoundStreet: 'Street not found in the current location, are you sure to apply this street name?'
       }
     }
   }
@@ -201,6 +209,8 @@
     }
   }
 
+  WMEUI.addTranslation(NAME, TRANSLATION)
+
   // OpenLayer styles
   const STYLE =
     '.e50 legend { cursor:pointer; font-size: 12px; font-weight: bold; width: auto; text-align: right; border: 0; margin: 0; padding: 0 8px; }' +
@@ -214,11 +224,10 @@
     '.e50 li a.noaddress:hover { background: rgba(255, 255, 200, 1) }' +
     '#panel-container .archive-panel .body { overflow-x: auto; max-height: 420px; }' +
     '.e50 div.controls:empty, #panel-container .archive-panel .body:empty { min-height: 20px; }' +
-    '.e50 div.controls:empty::after, #panel-container .archive-panel .body:empty::after { color: #ccc; content: "' + I18n.t(NAME).notFound + '" }' +
+    '.e50 div.controls:empty::after, #panel-container .archive-panel .body:empty::after { color: #ccc; padding: 0 8px; content: "' + I18n.t(NAME).notFound + '" }' +
     '.e50 div.controls input[type="text"] { float:right; }' +
     'p.e50-info { border-top: 1px solid #ccc; color: #777; font-size: x-small; margin-top: 15px; padding-top: 10px; text-align: center; }'
 
-  WMEUI.addTranslation(NAME, TRANSLATION)
   WMEUI.addStyle(STYLE)
 
   let WazeActionUpdateObject
@@ -409,7 +418,9 @@
         providers.push(providerPromise)
       }
 
-      Promise.all(providers).then(() => this.groupEnd())
+      Promise
+        .all(providers)
+        .then(() => this.groupEnd())
 
       if (this.settings.get('options', 'modal')) {
         if (this.settings.get('options', 'transparent')) {
@@ -641,7 +652,7 @@
       }
 
       if (!city) {
-        let cities = W.model.cities.getObjectArray().filter(m => m.attributes.name !== null && m.attributes.name !== '').map(m => m.attributes.name)
+        let cities = W.model.cities.getObjectArray().filter(c => c.getName()).map(c => c.getName())
         city = cities.length ? cities[0] : ''
       }
       if (!street) {
@@ -1095,6 +1106,8 @@
       return
     }
 
+    E50Instance.group('Apply data')
+
     let lat = this.dataset.lat
     let lon = this.dataset.lon
     let name = this.dataset.name
@@ -1140,31 +1153,60 @@
 
     // POI Address Street Name
     let newStreet
-    let addressStreet = poi.getAddress().getStreet() ? poi.getAddress().getStreet().name : ''
+    let addressStreet = poi.getAddress().getStreet()?.getName() || ''
     if (street) {
-      if (addressStreet) {
-        if (addressStreet !== street &&
-          window.confirm(I18n.t(NAME).questions.changeStreet + '\n«' + addressStreet + '» ⟶ «' + street + '»?')) {
+      let existStreet = detectStreet(street)
+
+      if (existStreet) {
+        // We found street, all OK
+        console.log('✅ Street detected, is «' + existStreet + '»')
+        street = existStreet
+      } else if (!window.confirm(I18n.t(NAME).questions.notFoundStreet + '\n«' + street + '»?')) {
+        street = null
+      }
+
+      // Check the current POI street name, and ask to rewrite it
+      if (street) {
+        if (addressStreet) {
+          if (addressStreet !== street &&
+            window.confirm(I18n.t(NAME).questions.changeStreet + '\n«' + addressStreet + '» ⟶ «' + street + '»?')) {
+            newStreet = street
+          }
+        } else {
           newStreet = street
         }
-      } else {
-        newStreet = street
       }
     }
 
     // POI Address City
     let newCity
-    let addressCity = poi.getAddress().getCity() ? poi.getAddress().getCity().getName() : ''
+    let addressCity = poi.getAddress().getCity()?.getName() || ''
     if (city) {
-      if (addressCity) {
-        if (addressCity !== city &&
-          window.confirm(I18n.t(NAME).questions.changeCity + '\n«' + addressCity + '» ⟶ «' + city + '»?')) {
+      // Try to find the city in the current location
+      let existCity = detectCity(city)
+
+      if (existCity) {
+        // We found city, all OK
+        console.log('✅ City detected, is «' + existCity + '»')
+        city = existCity
+      } else if(!window.confirm(I18n.t(NAME).questions.notFoundCity + '\n«' + city + '»?')) {
+        // We can't find city, and will ask to create new one, but not needed
+        city = null
+      }
+
+      if (city) {
+        if (addressCity) {
+          if (addressCity !== city &&
+            window.confirm(I18n.t(NAME).questions.changeCity + '\n«' + addressCity + '» ⟶ «' + city + '»?')) {
+            newCity = city
+          }
+        } else {
           newCity = city
         }
-      } else {
-        newCity = city
       }
     }
+
+    // Update Address
     if (newCity || newStreet) {
       let address = {
         countryID: W.model.getTopCountry().getID(),
@@ -1223,12 +1265,14 @@
     if (newName || newHN || newStreet || newCity) {
       W.selectionManager.setSelectedModels([poi])
     }
+
+    E50Instance.groupEnd()
   }
 
   /**
    * Normalize the string:
    *  - remove the double quotes
-   *  - remove double space space
+   *  - remove double space
    * @param   {String} str
    * @returns {String}
    */
@@ -1258,31 +1302,42 @@
   }
 
   /**
-   * Search the city name from available in editor area
+   * Normalize the city name
    * @param  {String} city
    * @return {String}
    */
   function normalizeCity (city) {
-    city = normalizeString(city)
+    return normalizeString(city)
+  }
 
-    if (city === '') {
-      return ''
-    }
-
+  /**
+   * Search the city name from available in editor area
+   * @param  {String} city
+   * @return {String|null}
+   */
+  function detectCity(city) {
     // Get list of all available cities
-    let cities = W.model.cities.getObjectArray().filter(m => m.attributes.name !== null && m.attributes.name !== '').map(m => m.attributes.name)
+    let cities = W.model.cities.getObjectArray()
+      .filter(m => m.attributes.name !== null && m.attributes.name !== '')
+      .map(m => m.attributes.name)
 
     // More than one city, use city with best matching score
     // Remove text in the "( )", Waze puts region name to the pair brackets
     let best = findBestMatch(city, cities.map(city => city.replace(/( ?\(.*\))/gi, '')))
+
     if (best > -1) {
-      city = cities[best]
+      console.log('✅ City detected')
+      return cities[best]
+    } else if (cities.length === 1) {
+      console.log('❎ City doesn\'t found, uses default city')
+      return cities[0]
+    } else {
+      console.log('❌ City doesn\'t found')
+      return null
     }
-    return city
   }
 
-  /**
-   * Search the street name from available in editor area
+  /**\
    * Normalize the street name by UA rules
    * @param  {String} street
    * @return {String}
@@ -1298,7 +1353,6 @@
     street = street.replace(/[’']/, '\'')
     // Remove text in the "( )", OSM puts alternative name to the pair brackets
     street = street.replace(/( ?\(.*\))/gi, '')
-
     // Normalize title
     let regs = {
       '(^| )бульвар( |$)': '$1б-р$2',         // normalize
@@ -1328,8 +1382,20 @@
       }
     }
 
+    return street
+  }
+
+  /**
+   * Search the street name from available in editor area
+   * Normalize the street name by UA rules
+   * @param  {String} street
+   * @return {String|null}
+   */
+  function detectStreet (street) {
+    street = normalizeStreet(street)
+
     // Get all streets
-    let streets = W.model.streets.getObjectArray().filter(m => m.name !== null && m.name !== '').map(m => m.name)
+    let streets = W.model.streets.getObjectArray().filter(m => m.getName()).map(m => m.getName())
 
     // Get type and create RegExp for filter streets
     let reTypes = new RegExp('(алея|б-р|в\'їзд|вул\\.|дор\\.|мкрн|наб\\.|площа|пров\\.|пр\\.|просп\\.|р-н|ст\\.|тракт|траса|тупик|узвіз|шосе)', 'gi')
@@ -1360,9 +1426,10 @@
       )
       if (best > -1) {
         street = streets[best]
+      } else {
+        return null
       }
     }
-    // console.log(arguments[0], street)
     return street
   }
 
