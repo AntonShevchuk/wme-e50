@@ -648,7 +648,7 @@
       if (segment) {
         let address = segment.getAddress()
         city = address.attributes.city.attributes.name
-        street = address.attributes.street.name
+        street = address.attributes.street.attributes.name
       }
 
       if (!city) {
