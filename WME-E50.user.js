@@ -236,7 +236,7 @@
 
   // OpenLayer styles
   const STYLE =
-    '.e50 .header h5 { padding: 0 16px }' +
+    '.e50 .header h5 { padding: 0 16px; font-size: 16px }' +
     '.e50 .body { overflow-x: auto; max-height: 420px; padding: 4px 0; }' +
 
     '.e50 fieldset { border: 1px solid #ddd; }' +
