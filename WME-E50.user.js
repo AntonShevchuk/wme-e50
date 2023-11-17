@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         WME E50 Fetch POI Data
 // @name:uk      WME 🇺🇦 E50 Fetch POI Data
-// @version      0.8.4
+// @version      0.9.0
 // @description  Fetch information about the POI from external sources
 // @description:uk Скрипт дозволяє отримувати інформацію про POI зі сторонніх ресурсів
 // @license      MIT License
@@ -24,8 +24,8 @@
 // @require      https://greasyfork.org/scripts/450160-wme-bootstrap/code/WME-Bootstrap.js?version=1218867
 // @require      https://greasyfork.org/scripts/452563-wme/code/WME.js?version=1218878
 // @require      https://greasyfork.org/scripts/450221-wme-base/code/WME-Base.js?version=1137043
-// @require      https://greasyfork.org/scripts/450320-wme-ui/code/WME-UI.js?version=1137289
-// @require      https://greasyfork.org/scripts/38421-wme-utils-navigationpoint/code/WME%20Utils%20-%20NavigationPoint.js?version=251067
+// @require      https://greasyfork.org/scripts/450320-wme-ui/code/WME-UI.js?version=1281847
+// @require      https://greasyfork.org/scripts/480123-wme-entrypoint/code/WME-EntryPoint.js?version=1281900
 // ==/UserScript==
 
 /* jshint esversion: 8 */
@@ -209,20 +209,49 @@
     }
   }
 
+  // Road Types
+  //   I18n.translations.uk.segment.road_types
+  //   I18n.translations.en.segment.road_types
+  const TYPES = {
+    street: 1,
+    primary: 2,
+    freeway: 3,
+    ramp: 4,
+    trail: 5,
+    major: 6,
+    minor: 7,
+    offroad: 8,
+    walkway: 9,
+    boardwalk: 10,
+    ferry: 15,
+    stairway: 16,
+    private: 17,
+    railroad: 18,
+    runway: 19,
+    parking: 20,
+    narrow: 22
+  }
+
   WMEUI.addTranslation(NAME, TRANSLATION)
 
   // OpenLayer styles
   const STYLE =
-    '.e50 legend { cursor:pointer; font-size: 12px; font-weight: bold; width: auto; text-align: right; border: 0; margin: 0; padding: 0 8px; }' +
-    '.e50 fieldset { border: 1px solid #ddd; padding: 4px; margin: 4px; }' +
+    '.e50 .header h5 { padding: 0 16px }' +
+    '.e50 .body { overflow-x: auto; max-height: 420px; padding: 4px 0; }' +
+
+    '.e50 fieldset { border: 1px solid #ddd; }' +
+    '.e50 fieldset legend { cursor:pointer; font-size: 12px; font-weight: bold; margin: 0; padding: 0 8px; background-color: #f6f7f7; border-bottom: 1px solid #ececec; border-top: 1px solid #ececec }' +
+    '.e50 fieldset legend::after { display: inline-block; font: normal normal normal 14px/1 FontAwesome; font-size: inherit; text-rendering: auto; content: ""; float: right; font-size: 10px; line-height: inherit; position: relative; right: 3px; } ' +
+    '.e50 fieldset.collapsed legend::after { content: "" }' +
+    '.e50 fieldset.collapsed ul { display: none } ' +
+    '.e50 fieldset legend span { font-weight: bold; background-color: #fff; border-radius: 5px; color: #ed503b; display: inline-block; font-size: 12px; line-height: 14px; max-width: 30px; padding: 1px 5px; text-align: center; } ' +
     '.e50 fieldset.e50 div.controls label { white-space: normal; }' +
-    '.e50 ul { padding: 0; margin: 0 }' +
+    '.e50 ul { padding: 8px; margin: 0 }' +
     '.e50 li { padding: 0; margin: 0; list-style: none; margin-bottom: 2px }' +
     '.e50 li a { display: block; padding: 2px 4px; text-decoration: none; border: 1px solid #e4e4e4; }' +
-    '.e50 li a:hover { background: #ddd }' +
-    '.e50 li a.noaddress { background: rgba(255, 255, 200, 0.5) }' +
-    '.e50 li a.noaddress:hover { background: rgba(255, 255, 200, 1) }' +
-    '#panel-container .archive-panel .body { overflow-x: auto; max-height: 420px; }' +
+    '.e50 li a:hover { background: rgba(255, 255, 200, 1) }' +
+    '.e50 li a.noaddress { background: rgba(255, 200, 200, 0.5) }' +
+    '.e50 li a.noaddress:hover { background: rgba(255, 200, 200, 1) }' +
     '.e50 div.controls:empty, #panel-container .archive-panel .body:empty { min-height: 20px; }' +
     '.e50 div.controls:empty::after, #panel-container .archive-panel .body:empty::after { color: #ccc; padding: 0 8px; content: "' + I18n.t(NAME).notFound + '" }' +
     '.e50 div.controls input[type="text"] { float:right; }' +
@@ -342,7 +371,7 @@
         return
       }
 
-      let selected = poi.geometry.getCentroid().clone()
+      let selected = poi.getOLGeometry().getCentroid().clone()
       selected.transform('EPSG:900913', 'EPSG:4326')
 
       let providers = []
@@ -424,7 +453,7 @@
 
       if (this.settings.get('options', 'modal')) {
         if (this.settings.get('options', 'transparent')) {
-          parent.style.opacity = 0.6
+          parent.style.opacity = '0.6'
           parent.onmouseover = () => (parent.style.opacity = '1')
           parent.onmouseout = () => (parent.style.opacity = '0.6')
         }
@@ -590,7 +619,12 @@
     _fieldset () {
       let fieldset = document.createElement('fieldset')
       let list = document.createElement('ul')
-      list.style.display = this.response.length > 2 ? 'none' : 'block'
+
+      if (this.response.length > 3) {
+        fieldset.className = 'collapsed'
+      } else {
+        fieldset.className = ''
+      }
 
       for (let i = 0; i < this.response.length; i++) {
         let item = document.createElement('li')
@@ -599,9 +633,9 @@
       }
 
       let legend = document.createElement('legend')
-      legend.innerText = this.uid + ' [' + this.response.length + ']'
+      legend.innerHTML = this.uid + ' <span>' + this.response.length + '</span>'
       legend.onclick = function () {
-        $(this).next().toggle()
+        this.parentElement.classList.toggle("collapsed")
         return false
       }
       fieldset.append(legend, list)
@@ -638,7 +672,7 @@
    */
   class MagicProvider extends Provider {
     constructor (container, settings) {
-      super('Magic', container, settings)
+      super(I18n.t(NAME).providers.magic, container, settings)
     }
 
     async request (lon, lat) {
@@ -646,9 +680,13 @@
       let street = ''
       let segment = findClosestSegment(new OpenLayers.Geometry.Point(lon, lat).transform('EPSG:4326', 'EPSG:900913'), true, true)
       if (segment) {
-        let address = segment.getAddress()
-        city = address.attributes.city.attributes.name
-        street = address.attributes.street.attributes.name
+        city = segment.getAddress().getCityName()
+        street = segment.getAddress().getStreetName()
+
+        // to lon, lat
+        let point = segment.closestPoint.transform('EPSG:900913', 'EPSG:4326')
+        lon = point.x
+        lat = point.y
       }
 
       if (!city) {
@@ -659,7 +697,7 @@
         return []
       }
 
-      console.groupCollapsed(I18n.t(NAME).providers.magic)
+      console.groupCollapsed(this.uid)
       // lon, lat, city, street, number, name
       let result = [
         this.element(
@@ -701,7 +739,7 @@
         return []
       }
 
-      console.groupCollapsed(I18n.t(NAME).providers.visicom)
+      console.groupCollapsed(this.uid)
       let result = this.collection(response.features)
       console.groupEnd()
       return result
@@ -750,7 +788,7 @@
         return []
       }
 
-      console.groupCollapsed(I18n.t(NAME).providers.osm)
+      console.groupCollapsed(this.uid)
       let result = [this.item(response)]
       console.groupEnd()
       return result
@@ -803,7 +841,7 @@
         return []
       }
 
-      console.groupCollapsed(I18n.t(NAME).providers.gis)
+      console.groupCollapsed(this.uid)
       let result = this.collection(response.result.items)
       console.groupEnd()
       return result
@@ -874,7 +912,7 @@
         return []
       }
 
-      console.groupCollapsed(I18n.t(NAME).providers.here)
+      console.groupCollapsed(this.uid)
       let result = this.collection(response.Response.View[0].Result.filter(x => x.MatchLevel === 'houseNumber'))
       console.groupEnd()
       return result
@@ -917,7 +955,7 @@
         return []
       }
 
-      console.groupCollapsed(I18n.t(NAME).providers.bing)
+      console.groupCollapsed(this.uid)
       let result = this.collection(response.resourceSets[0].resources.filter(el => el.address.addressLine && el.address.addressLine.indexOf(',') > 0))
       console.groupEnd()
       return result
@@ -952,7 +990,7 @@
         return []
       }
 
-      console.groupCollapsed(I18n.t(NAME).providers.google)
+      console.groupCollapsed(this.uid)
       let result = this.collection(response)
       console.groupEnd()
       return result
@@ -1050,7 +1088,7 @@
         continue
 
       seg = W.model.segments.getObjectById(s)
-      if (mapExtent.intersectsBounds(seg.geometry.getBounds()))
+      if (mapExtent.intersectsBounds(seg.getOLGeometry().getBounds()))
         onScreenSegments.push(seg)
     }
     return onScreenSegments
@@ -1073,17 +1111,29 @@
         continue
 
       let segmentType = onscreenSegments[s].attributes.roadType
-      if (segmentType === 10 || segmentType === 16 || segmentType === 18 || segmentType === 19) //10 ped boardwalk, 16 stairway, 18 railroad, 19 runway, 3 freeway
+
+
+      if (segmentType === TYPES.boardwalk
+        || segmentType === TYPES.stairway
+        || segmentType === TYPES.railroad
+        || segmentType === TYPES.runway)
         continue
 
-      if (ignorePLR && segmentType === 20) //PLR
+      // parking lots
+      if (ignorePLR && segmentType === TYPES.parking) //PLR
         continue
 
-      if (ignoreUnnamedPR)
-        if (segmentType === 17 && W.model.streets.getObjectById(onscreenSegments[s].attributes.primaryStreetID).name === null) //PR
+      // private roads
+      if (ignoreUnnamedPR && segmentType === TYPES.private)
+        continue
+
+      // unnamed roads, f**ing magic number
+      if (
+        !onscreenSegments[s].getAddress().getStreet().getID() ||
+        onscreenSegments[s].getAddress().getStreet().getID() === 8325397)
           continue
 
-      let distanceToSegment = geometry.distanceTo(onscreenSegments[s].geometry, { details: true })
+      let distanceToSegment = geometry.distanceTo(onscreenSegments[s].getOLGeometry(), { details: true })
 
       if (distanceToSegment.distance < minDistance) {
         minDistance = distanceToSegment.distance
@@ -1091,6 +1141,7 @@
         closestSegment.closestPoint = new OpenLayers.Geometry.Point(distanceToSegment.x1, distanceToSegment.y1)
       }
     }
+
     return closestSegment
   }
 
@@ -1248,12 +1299,14 @@
     if (E50Instance.settings.get('options', 'entryPoint') && poi.attributes.entryExitPoints.length === 0) {
       // Create point based on data from external source
       let point = new OpenLayers.Geometry.Point(lon, lat).transform('EPSG:4326', 'EPSG:900913')
+
       // Check intersection with selected POI
-      if (!poi.isPoint() && !poi.getPolygonGeometry().intersects(point)) {
-        point = poi.geometry.getCentroid()
+      if (!poi.isPoint() && !poi.getOLGeometry().intersects(point)) {
+        point = poi.getOLGeometry().getCentroid()
       }
+
       // Create entry point
-      let navPoint = new NavigationPoint(point)
+      let navPoint = new entryPoint({point: W.userscripts.toGeoJSONGeometry(point)})
       W.model.actionManager.add(new WazeActionUpdateObject(poi, { entryExitPoints: [navPoint] }))
     }
 
@@ -1532,7 +1585,7 @@
     if (!poi) {
       return
     }
-    let from = poi.geometry.getCentroid()
+    let from = poi.getOLGeometry().getCentroid()
     let to = new OpenLayers.Geometry.Point(this.dataset.lon, this.dataset.lat).transform('EPSG:4326', 'EPSG:900913')
     let distance = Math.round(calculateDistance([to, from]))
 
