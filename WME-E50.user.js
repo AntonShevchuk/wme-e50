@@ -20,12 +20,12 @@
 // @connect      maps.googleapis.com
 // @grant        GM.xmlHttpRequest
 // @grant        GM.setClipboard
-// @require      https://greasyfork.org/scripts/389765-common-utils/code/CommonUtils.js?version=1090053
-// @require      https://greasyfork.org/scripts/450160-wme-bootstrap/code/WME-Bootstrap.js?version=1218867
-// @require      https://greasyfork.org/scripts/452563-wme/code/WME.js?version=1218878
-// @require      https://greasyfork.org/scripts/450221-wme-base/code/WME-Base.js?version=1137043
-// @require      https://greasyfork.org/scripts/450320-wme-ui/code/WME-UI.js?version=1281847
-// @require      https://greasyfork.org/scripts/480123-wme-entrypoint/code/WME-EntryPoint.js?version=1281900
+// @require      https://update.greasyfork.org/scripts/389765/1090053/CommonUtils.js
+// @require      https://update.greasyfork.org/scripts/450160/1218867/WME-Bootstrap.js
+// @require      https://update.greasyfork.org/scripts/452563/1218878/WME.js
+// @require      https://update.greasyfork.org/scripts/450221/1137043/WME-Base.js
+// @require      https://update.greasyfork.org/scripts/450320/1281847/WME-UI.js
+// @require      https://update.greasyfork.org/scripts/480123/1281900/WME-EntryPoint.js
 // ==/UserScript==
 
 /* jshint esversion: 8 */
