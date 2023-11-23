@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         WME E50 Fetch POI Data
 // @name:uk      WME 🇺🇦 E50 Fetch POI Data
-// @version      0.9.0
+// @version      0.9.1
 // @description  Fetch information about the POI from external sources
 // @description:uk Скрипт дозволяє отримувати інформацію про POI зі сторонніх ресурсів
 // @license      MIT License
@@ -239,22 +239,29 @@
     '.e50 .header h5 { padding: 0 16px; font-size: 16px }' +
     '.e50 .body { overflow-x: auto; max-height: 420px; padding: 4px 0; }' +
 
+    '.e50 .button-toolbar legend { border: 1px solid #e5e5e5; width: 94%; margin: 0 auto; } ' +
+    '.e50 .button-toolbar fieldset { margin-bottom: 8px } ' +
+
     '.e50 fieldset { border: 1px solid #ddd; }' +
-    '.e50 fieldset legend { cursor:pointer; font-size: 12px; font-weight: bold; margin: 0; padding: 0 8px; background-color: #f6f7f7; border-bottom: 1px solid #ececec; border-top: 1px solid #ececec }' +
-    '.e50 fieldset legend::after { display: inline-block; font: normal normal normal 14px/1 FontAwesome; font-size: inherit; text-rendering: auto; content: ""; float: right; font-size: 10px; line-height: inherit; position: relative; right: 3px; } ' +
-    '.e50 fieldset.collapsed legend::after { content: "" }' +
-    '.e50 fieldset.collapsed ul { display: none } ' +
-    '.e50 fieldset legend span { font-weight: bold; background-color: #fff; border-radius: 5px; color: #ed503b; display: inline-block; font-size: 12px; line-height: 14px; max-width: 30px; padding: 1px 5px; text-align: center; } ' +
-    '.e50 fieldset.e50 div.controls label { white-space: normal; }' +
+    '.e50 fieldset legend { cursor:pointer; font-size: 12px; font-weight: bold; margin: 0; padding: 0 8px; background-color: #f6f7f7; border-top: 1px solid #e5e5e5; }' +
+    '.panel.e50 fieldset legend::after { display: inline-block; font: normal normal normal 14px/1 FontAwesome; font-size: inherit; text-rendering: auto; content: ""; float: right; font-size: 10px; line-height: inherit; position: relative; right: 3px; } ' +
+    '.panel.e50 fieldset.collapsed legend::after { content: "" }' +
+    '.panel.e50 fieldset.collapsed ul { display: none } ' +
+    '.panel.e50 fieldset legend span { font-weight: bold; background-color: #fff; border-radius: 5px; color: #ed503b; display: inline-block; font-size: 12px; line-height: 14px; max-width: 30px; padding: 1px 5px; text-align: center; } ' +
+
     '.e50 ul { padding: 8px; margin: 0 }' +
     '.e50 li { padding: 0; margin: 0; list-style: none; margin-bottom: 2px }' +
     '.e50 li a { display: block; padding: 2px 4px; text-decoration: none; border: 1px solid #e4e4e4; }' +
     '.e50 li a:hover { background: rgba(255, 255, 200, 1) }' +
     '.e50 li a.noaddress { background: rgba(255, 200, 200, 0.5) }' +
     '.e50 li a.noaddress:hover { background: rgba(255, 200, 200, 1) }' +
+
+    '.e50 div.controls { padding: 8px; }' +
     '.e50 div.controls:empty, #panel-container .archive-panel .body:empty { min-height: 20px; }' +
     '.e50 div.controls:empty::after, #panel-container .archive-panel .body:empty::after { color: #ccc; padding: 0 8px; content: "' + I18n.t(NAME).notFound + '" }' +
+    '.e50 div.controls label { white-space: normal; font-weight: 400; margin-top: 5px; }' +
     '.e50 div.controls input[type="text"] { float:right; }' +
+
     'p.e50-info { border-top: 1px solid #ccc; color: #777; font-size: x-small; margin-top: 15px; padding-top: 10px; text-align: center; }'
 
   WMEUI.addStyle(STYLE)
