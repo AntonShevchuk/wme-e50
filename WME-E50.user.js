@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         WME E50 Fetch POI Data
 // @name:uk      WME 🇺🇦 E50 Fetch POI Data
-// @version      0.9.1
+// @version      0.9.2
 // @description  Fetch information about the POI from external sources
 // @description:uk Скрипт дозволяє отримувати інформацію про POI зі сторонніх ресурсів
 // @license      MIT License
@@ -685,7 +685,7 @@
     async request (lon, lat) {
       let city = ''
       let street = ''
-      let segment = findClosestSegment(new OpenLayers.Geometry.Point(lon, lat).transform('EPSG:4326', 'EPSG:900913'), true, true)
+      let segment = findClosestSegment(new OpenLayers.Geometry.Point(lon, lat).transform('EPSG:4326', 'EPSG:900913'), true, false)
       if (segment) {
         city = segment.getAddress().getCityName()
         street = segment.getAddress().getStreetName()
