@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         WME E50 Fetch POI Data
 // @name:uk      WME 🇺🇦 E50 Fetch POI Data
-// @version      0.9.2
+// @version      0.9.3
 // @description  Fetch information about the POI from external sources
 // @description:uk Скрипт дозволяє отримувати інформацію про POI зі сторонніх ресурсів
 // @license      MIT License
@@ -1313,7 +1313,7 @@
       }
 
       // Create entry point
-      let navPoint = new entryPoint({point: W.userscripts.toGeoJSONGeometry(point)})
+      let navPoint = new entryPoint({primary: true, point: W.userscripts.toGeoJSONGeometry(point)})
       W.model.actionManager.add(new WazeActionUpdateObject(poi, { entryExitPoints: [navPoint] }))
     }
 
