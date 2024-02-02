@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         WME E50 Fetch POI Data
 // @name:uk      WME 🇺🇦 E50 Fetch POI Data
-// @version      0.9.3
+// @version      0.10.0
 // @description  Fetch information about the POI from external sources
 // @description:uk Скрипт дозволяє отримувати інформацію про POI зі сторонніх ресурсів
 // @license      MIT License
@@ -18,6 +18,7 @@
 // @connect      catalog.api.2gis.com
 // @connect      dev.virtualearth.net
 // @connect      maps.googleapis.com
+// @connect      stat.waze.com.ua
 // @grant        GM.xmlHttpRequest
 // @grant        GM.setClipboard
 // @require      https://update.greasyfork.org/scripts/389765/1090053/CommonUtils.js
@@ -68,6 +69,7 @@
         here: 'HERE',
         google: 'Google',
         visicom: 'Visicom',
+        ua: 'UA Adresses',
       },
       questions: {
         changeName: 'Are you sure to change the name?',
@@ -99,6 +101,7 @@
         here: 'HERE',
         google: 'Google',
         visicom: 'Візіком',
+        ua: 'UA Адреси',
       },
       questions: {
         changeName: 'Ви впевненні що хочете змінити им\'я?',
@@ -130,6 +133,7 @@
         here: 'HERE',
         google: 'Google',
         visicom: 'Визиком',
+        ua: 'UA Адреса',
       },
       questions: {
         changeName: 'Ви уверены, что хотите изменить имя?',
@@ -161,6 +165,7 @@
         here: 'HERE',
         google: 'Google',
         visicom: 'Visicom',
+        ua: 'UA Adresses',
       },
       questions: {
         changeName: 'Êtes-vous sûr de changer le nom ?',
@@ -189,6 +194,7 @@
       here: false,
       google: true,
       visicom: false,
+      ua: false,
     },
     keys: {
       // Russian warship go f*ck yourself!
@@ -197,6 +203,7 @@
       here: 'GCFmOOrSp8882vFwTxEm' + ':' + 'O-LgGkoRfypnRuik0WjX9A',
       bing: 'AuBfUY8Y1Nzf' + '3sRgceOYxaIg7obOSaqvs' + '0k5dhXWfZyFpT9ArotYNRK7DQ_qZqZw',
       google: 'AIzaSyBWB3' + 'jiUm1dkFwvJWy4w4ZmO7K' + 'PyF4oUa0', // extract it from WME
+      ua: 'E50'
     }
   }
 
@@ -400,6 +407,15 @@
         providers.push(providerPromise)
       }
 
+      if (this.settings.get('providers', 'ua')) {
+        let UaAddresses = new UaAddressesProvider(container, settings, this.settings.get('keys', 'ua'))
+        let providerPromise = UaAddresses
+          .search(selected.x, selected.y)
+          .then(() => UaAddresses.render())
+          .catch(() => this.log(':('))
+        providers.push(providerPromise)
+      }
+
       if (this.settings.get('providers', 'osm')) {
         let Osm = new OsmProvider(container, settings)
         let providerPromise = Osm
@@ -548,6 +564,7 @@
       for (let i = 0; i < res.length; i++) {
         result.push(this.item(res[i]))
       }
+      result = result.filter(x => x)
       return result
     }
 
@@ -685,7 +702,7 @@
     async request (lon, lat) {
       let city = ''
       let street = ''
-      let segment = findClosestSegment(new OpenLayers.Geometry.Point(lon, lat).transform('EPSG:4326', 'EPSG:900913'), true, false)
+      let segment = findClosestSegment(new OpenLayers.Geometry.Point(lon, lat).transform('EPSG:4326', 'EPSG:900913'), true, true)
       if (segment) {
         city = segment.getAddress().getCityName()
         street = segment.getAddress().getStreetName()
@@ -718,6 +735,53 @@
       ]
       console.groupEnd()
       return result
+    }
+  }
+
+  /**
+   * US Addresses
+   */
+  class UaAddressesProvider extends Provider {
+    constructor (container, settings, key) {
+      super(I18n.t(NAME).providers.ua, container, settings)
+      this.key = key
+    }
+
+    async request (lon, lat) {
+      let url = `https://stat.waze.com.ua/address_map/address_map.php?lat=${lat}&lon=${lon}&script=${this.key}`
+
+      let response = await this.makeRequest(url, {}).catch(e => console.error(this.uid, 'return error', e))
+
+      if (!response || !response.result || response.result !== 'success') {
+        return []
+      }
+
+      console.groupCollapsed(this.uid)
+      console.log(url)
+      let result = this.collection(response.data.polygons.Default)
+      console.groupEnd()
+      return result
+    }
+
+    item (res) {
+      let data = res.name.split("\n ")
+
+      if (data.length < 3) {
+        return false
+      }
+
+      let city = data.shift()
+      let number = data.pop()
+      let street = data.pop()
+
+      let parser = new OpenLayers.Format.WKT()
+      parser.internalProjection = W.map.getProjectionObject()
+      //parser.externalProjection = new OpenLayers.Projection('EPSG:4326')
+
+      let feature = parser.read(res.polygon)
+      let centerPoint = feature.geometry.getCentroid()
+
+      return this.element(centerPoint.x, centerPoint.y, city, street, number)
     }
   }
 
@@ -1070,6 +1134,7 @@
    */
   function getSelectedPOI () {
     let venue = WME.getSelectedVenue()
+      //venue = W.selectionManager.getSelectedDataModelObjects()[0]
     if (!venue) {
       return null
     }
@@ -1138,7 +1203,7 @@
       if (
         !onscreenSegments[s].getAddress().getStreet().getID() ||
         onscreenSegments[s].getAddress().getStreet().getID() === 8325397)
-          continue
+        continue
 
       let distanceToSegment = geometry.distanceTo(onscreenSegments[s].getOLGeometry(), { details: true })
 
