@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         WME E50 Fetch POI Data
 // @name:uk      WME 🇺🇦 E50 Fetch POI Data
-// @version      0.10.0
+// @version      0.10.1
 // @description  Fetch information about the POI from external sources
 // @description:uk Скрипт дозволяє отримувати інформацію про POI зі сторонніх ресурсів
 // @license      MIT License
@@ -510,6 +510,12 @@
       url += '?'
       url += new URLSearchParams(data).toString()
 
+      let query = new URLSearchParams(data).toString()
+
+      if (query.length) {
+        url = url + '?' + query
+      }
+
       return new Promise((resolve, reject) => {
         GM.xmlHttpRequest({
           method: 'GET',
@@ -748,23 +754,26 @@
     }
 
     async request (lon, lat) {
-      let url = `https://stat.waze.com.ua/address_map/address_map.php?lat=${lat}&lon=${lon}&script=${this.key}`
-
-      let response = await this.makeRequest(url, {}).catch(e => console.error(this.uid, 'return error', e))
+      let url = 'https://stat.waze.com.ua/address_map/address_map.php'
+      let data = {
+        lon: lon,
+        lat: lat,
+        script: this.key
+      }
+      let response = await this.makeRequest(url, data).catch(e => console.error(this.uid, 'return error', e))
 
       if (!response || !response.result || response.result !== 'success') {
         return []
       }
 
       console.groupCollapsed(this.uid)
-      console.log(url)
       let result = this.collection(response.data.polygons.Default)
       console.groupEnd()
       return result
     }
 
     item (res) {
-      let data = res.name.split("\n ")
+      let data = res.name.split(", ")
 
       if (data.length < 3) {
         return false
@@ -1650,7 +1659,7 @@
   }
 
   /**
-   * Show vector from center of the selected POI to point by lon and lat
+   * Show vector from the center of the selected POI to point by lon and lat
    */
   function showVector () {
     let poi = getSelectedPOI()
