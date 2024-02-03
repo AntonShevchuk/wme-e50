@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         WME E50 Fetch POI Data
 // @name:uk      WME 🇺🇦 E50 Fetch POI Data
-// @version      0.10.1
+// @version      0.10.2
 // @description  Fetch information about the POI from external sources
 // @description:uk Скрипт дозволяє отримувати інформацію про POI зі сторонніх ресурсів
 // @license      MIT License
@@ -779,9 +779,9 @@
         return false
       }
 
-      let city = data.shift()
       let number = data.pop()
       let street = data.pop()
+      let city = data.pop()
 
       let parser = new OpenLayers.Format.WKT()
       parser.internalProjection = W.map.getProjectionObject()
@@ -1424,7 +1424,7 @@
   /**
    * Normalize the name:
    *  - remove № and #chars
-   *  - remove dotes
+   *  - remove dots
    * @param  {String} name
    * @return {String}
    */
