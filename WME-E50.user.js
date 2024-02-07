@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         WME E50 Fetch POI Data
 // @name:uk      WME 🇺🇦 E50 Fetch POI Data
-// @version      0.10.2
+// @version      0.10.3
 // @description  Fetch information about the POI from external sources
 // @description:uk Скрипт дозволяє отримувати інформацію про POI зі сторонніх ресурсів
 // @license      MIT License
@@ -775,6 +775,13 @@
     item (res) {
       let data = res.name.split(", ")
 
+      data = data.filter(part => {
+        return !part.trim().match(/^\D+\sобл\.$/)
+        && !part.trim().match(/^\D+\sр-н?$/)
+        && !part.trim().match(/^р-н\s+\D+$/)
+        }
+      )
+
       if (data.length < 3) {
         return false
       }
@@ -1143,7 +1150,8 @@
    */
   function getSelectedPOI () {
     let venue = WME.getSelectedVenue()
-      //venue = W.selectionManager.getSelectedDataModelObjects()[0]
+      // For TEST ENV only!
+      venue = W.selectionManager.getSelectedDataModelObjects()[0]
     if (!venue) {
       return null
     }
