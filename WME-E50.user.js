@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         WME E50 Fetch POI Data
 // @name:uk      WME 🇺🇦 E50 Fetch POI Data
-// @version      0.10.4
+// @version      0.10.5
 // @description  Fetch information about the POI from external sources
 // @description:uk Скрипт дозволяє отримувати інформацію про POI зі сторонніх ресурсів
 // @license      MIT License
@@ -507,9 +507,6 @@
      * @returns {Promise<unknown>}
      */
     async makeRequest (url, data) {
-      url += '?'
-      url += new URLSearchParams(data).toString()
-
       let query = new URLSearchParams(data).toString()
 
       if (query.length) {
@@ -815,7 +812,8 @@
       let data = {
         near: lon + ',' + lat,
         categories: 'adr_address',
-        radius: 50,
+        order: 'distance',
+        radius: 100,
         limit: 10,
         key: this.key,
       }
