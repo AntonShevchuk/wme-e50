@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         WME E50 Fetch POI Data
 // @name:uk      WME 🇺🇦 E50 Fetch POI Data
-// @version      0.10.6
+// @version      0.10.7
 // @description  Fetch information about the POI from external sources
 // @description:uk Скрипт дозволяє отримувати інформацію про POI зі сторонніх ресурсів
 // @license      MIT License
@@ -968,6 +968,7 @@
   /**
    * Here Maps
    * @link https://developer.here.com/documentation/geocoder/topics/quick-start-geocode.html
+   * @link https://www.here.com/docs/bundle/geocoder-api-developer-guide/page/topics/resource-reverse-geocode.html
    */
   class HereProvider extends Provider {
     constructor (container, settings, key) {
@@ -1658,7 +1659,6 @@
         displayInLayerSwitcher: false,
         uniqueName: '__E50VectorLayer'
       })
-
       W.map.addLayer(vectorLayer)
     }
     return vectorLayer
@@ -1700,7 +1700,7 @@
       strokeLinecap: 'round'
     })
     getVectorLayer().addFeatures([vectorLine, vectorPoint])
-    getVectorLayer().setZIndex(1001)
+    // getVectorLayer().setZIndex(1001)
     getVectorLayer().setVisibility(true)
   }
 
