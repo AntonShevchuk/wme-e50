@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         WME E50 Fetch POI Data
 // @name:uk      WME 🇺🇦 E50 Fetch POI Data
-// @version      0.10.8
+// @version      0.10.9
 // @description  Fetch information about the POI from external sources
 // @description:uk Скрипт дозволяє отримувати інформацію про POI зі сторонніх ресурсів
 // @license      MIT License
@@ -703,11 +703,11 @@
     }
 
     async request (lon, lat) {
-      let city = ''
+      let city = null
       let street = ''
       let segment = findClosestSegment(new OpenLayers.Geometry.Point(lon, lat).transform('EPSG:4326', 'EPSG:900913'), true, true)
       if (segment) {
-        city = segment.getAddress().getCityName()
+        city = segment.getAddress().getCity()
         street = segment.getAddress().getStreetName()
 
         // to lon, lat
@@ -717,8 +717,11 @@
       }
 
       if (!city) {
-        let cities = W.model.cities.getObjectArray().filter(c => c.getName()).map(c => c.getName())
-        city = cities.length ? cities[0] : ''
+        let cities = W.model.cities.getObjectArray()
+          .filter(c => c.getName()) // not empty city name
+          .filter(c => c.getName() !== 'поза НП') // not "no" city (hardcoded mistake)
+          .filter(c => c.getID() !== 55344) // not EMPTY city for Ukraine
+        city = cities.length ? cities.shift() : null
       }
       if (!street) {
         return []
@@ -730,7 +733,7 @@
         this.element(
           lon,
           lat,
-          city ? city : '',
+          city ? city.getName() : '',
           street,
           '',
           ''
@@ -1200,7 +1203,6 @@
 
       let segmentType = onscreenSegments[s].attributes.roadType
 
-
       if (segmentType === TYPES.boardwalk
         || segmentType === TYPES.stairway
         || segmentType === TYPES.railroad
@@ -1320,6 +1322,12 @@
     // POI Address City
     let newCity
     let addressCity = poi.getAddress().getCity()?.getName() || ''
+
+    // hardcoded value of common issue
+    if (addressCity === 'поза НП') {
+      addressCity = ''
+    }
+
     if (city) {
       // Try to find the city in the current location
       let existCity = detectCity(city)
@@ -1350,7 +1358,7 @@
       let address = {
         countryID: W.model.getTopCountry().getID(),
         stateID: W.model.getTopState().getID(),
-        cityName: newCity ? newCity : poi.getAddress().getCityName(),
+        cityName: newCity ? newCity : addressCity,
         streetName: newStreet ? newStreet : poi.getAddress().getStreetName()
       }
       W.model.actionManager.add(new WazeActionUpdateFeatureAddress(poi, address))
@@ -1459,8 +1467,9 @@
   function detectCity(city) {
     // Get list of all available cities
     let cities = W.model.cities.getObjectArray()
-      .filter(m => m.attributes.name !== null && m.attributes.name !== '' && m.attributes.name !== 'поза НП')
-      .map(m => m.attributes.name)
+      .filter(city => city.getName())
+      .filter(city => city.getName() !== 'поза НП')
+      .map(city => city.getName())
 
     // More than one city, use city with best matching score
     // Remove text in the "( )", Waze puts region name to the pair brackets
@@ -1471,7 +1480,7 @@
       return cities[best]
     } else if (cities.length === 1) {
       console.log('❎ City doesn\'t found, uses default city')
-      return cities[0]
+      return cities.shift()
     } else {
       console.log('❌ City doesn\'t found')
       return null
