@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         WME E50 Fetch POI Data
 // @name:uk      WME 🇺🇦 E50 Fetch POI Data
-// @version      0.10.7
+// @version      0.10.8
 // @description  Fetch information about the POI from external sources
 // @description:uk Скрипт дозволяє отримувати інформацію про POI зі сторонніх ресурсів
 // @license      MIT License
@@ -1459,7 +1459,7 @@
   function detectCity(city) {
     // Get list of all available cities
     let cities = W.model.cities.getObjectArray()
-      .filter(m => m.attributes.name !== null && m.attributes.name !== '')
+      .filter(m => m.attributes.name !== null && m.attributes.name !== '' && m.attributes.name !== 'поза НП')
       .map(m => m.attributes.name)
 
     // More than one city, use city with best matching score
