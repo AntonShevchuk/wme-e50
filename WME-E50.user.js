@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         WME E50 Fetch POI Data
 // @name:uk      WME 🇺🇦 E50 Fetch POI Data
-// @version      0.10.9
+// @version      0.10.10
 // @description  Fetch information about the POI from external sources
 // @description:uk Скрипт дозволяє отримувати інформацію про POI зі сторонніх ресурсів
 // @license      MIT License
@@ -375,8 +375,12 @@
       }
 
       // Clear container
-      while (container.hasChildNodes()) {
-        container.removeChild(container.lastChild)
+      try {
+        while (container.hasChildNodes()) {
+          container.removeChild(container.lastChild)
+        }
+      } catch (e) {
+        console.error(e)
       }
 
       let poi = getSelectedPOI()
