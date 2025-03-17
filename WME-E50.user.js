@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         WME E50 Fetch POI Data
 // @name:uk      WME 🇺🇦 E50 Fetch POI Data
-// @version      0.10.13
+// @version      0.10.14
 // @description  Fetch information about the POI from external sources
 // @description:uk Скрипт дозволяє отримувати інформацію про POI зі сторонніх ресурсів
 // @license      MIT License
@@ -644,7 +644,7 @@
     }
 
     /**
-     * Build fieldset with list of the response items
+     * Build fieldset with the list of the response items
      * @return {HTMLFieldSetElement}
      * @protected
      */
@@ -652,11 +652,13 @@
       let fieldset = document.createElement('fieldset')
       let list = document.createElement('ul')
 
+      /*
       if (this.response.length > 3) {
         fieldset.className = 'collapsed'
       } else {
         fieldset.className = ''
       }
+      */
 
       for (let i = 0; i < this.response.length; i++) {
         let item = document.createElement('li')
