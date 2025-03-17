@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         WME E50 Fetch POI Data
 // @name:uk      WME 🇺🇦 E50 Fetch POI Data
-// @version      0.10.11
+// @version      0.10.13
 // @description  Fetch information about the POI from external sources
 // @description:uk Скрипт дозволяє отримувати інформацію про POI зі сторонніх ресурсів
 // @license      MIT License
@@ -25,7 +25,7 @@
 // @require      https://update.greasyfork.org/scripts/450160/1218867/WME-Bootstrap.js
 // @require      https://update.greasyfork.org/scripts/452563/1218878/WME.js
 // @require      https://update.greasyfork.org/scripts/450221/1137043/WME-Base.js
-// @require      https://update.greasyfork.org/scripts/450320/1281847/WME-UI.js
+// @require      https://update.greasyfork.org/scripts/450320/1555192/WME-UI.js
 // @require      https://update.greasyfork.org/scripts/480123/1281900/WME-EntryPoint.js
 // ==/UserScript==
 
@@ -243,7 +243,7 @@
 
   // OpenLayer styles
   const STYLE =
-    '.e50 .header h5 { padding: 0 16px; font-size: 16px }' +
+    '.e50 .header h5 { padding: 16px 16px 0; font-size: 16px }' +
     '.e50 .body { overflow-x: auto; max-height: 420px; padding: 4px 0; }' +
 
     '.e50 .button-toolbar legend { border: 1px solid #e5e5e5; width: 94%; margin: 0 auto; } ' +
