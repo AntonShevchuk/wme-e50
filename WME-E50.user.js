@@ -25,7 +25,7 @@
 // @require      https://update.greasyfork.org/scripts/450160/1218867/WME-Bootstrap.js
 // @require      https://update.greasyfork.org/scripts/452563/1218878/WME.js
 // @require      https://update.greasyfork.org/scripts/450221/1137043/WME-Base.js
-// @require      https://update.greasyfork.org/scripts/450320/1555192/WME-UI.js
+// @require      https://update.greasyfork.org/scripts/450320/1555446/WME-UI.js
 // @require      https://update.greasyfork.org/scripts/480123/1281900/WME-EntryPoint.js
 // ==/UserScript==
 
@@ -251,10 +251,10 @@
 
     '.e50 fieldset { border: 1px solid #ddd; }' +
     '.e50 fieldset legend { cursor:pointer; font-size: 12px; font-weight: bold; margin: 0; padding: 0 8px; background-color: #f6f7f7; border-top: 1px solid #e5e5e5; }' +
-    '.panel.e50 fieldset legend::after { display: inline-block; font: normal normal normal 14px/1 FontAwesome; font-size: inherit; text-rendering: auto; content: ""; float: right; font-size: 10px; line-height: inherit; position: relative; right: 3px; } ' +
-    '.panel.e50 fieldset.collapsed legend::after { content: "" }' +
-    '.panel.e50 fieldset.collapsed ul { display: none } ' +
-    '.panel.e50 fieldset legend span { font-weight: bold; background-color: #fff; border-radius: 5px; color: #ed503b; display: inline-block; font-size: 12px; line-height: 14px; max-width: 30px; padding: 1px 5px; text-align: center; } ' +
+    '.e50 fieldset legend::after { display: inline-block; text-rendering: auto; content: ""; float: right; font-size: 10px; line-height: inherit; position: relative; right: 3px; } ' +
+    '.e50 fieldset.collapsed legend::after { content: "" }' +
+    '.e50 fieldset.collapsed ul { display: none } ' +
+    '.e50 fieldset legend span { font-weight: bold; background-color: #fff; border-radius: 5px; color: #ed503b; display: inline-block; font-size: 12px; line-height: 14px; max-width: 30px; padding: 1px 5px; text-align: center; } ' +
 
     '.e50 ul { padding: 8px; margin: 0 }' +
     '.e50 li { padding: 0; margin: 0; list-style: none; margin-bottom: 2px }' +
@@ -352,12 +352,12 @@
      * @return {Null}
      */
     onNone (event) {
-      document.getElementById('panel-container').innerText = ''
+      // document.getElementById('panel-container').innerText = ''
     }
 
     /**
      * Handler for `venue.wme` event
-     *  - create and fill modal panel
+     *  - create and fill the modal panel
      *
      * @param {jQuery.Event} event
      * @param {HTMLElement} element
@@ -368,7 +368,7 @@
       let container, parent
       if (this.settings.get('options', 'modal')) {
         parent = this.modal.html()
-        container = parent.querySelector('.body')
+        container = parent.querySelector('.wme-ui-body')
       } else {
         parent = this.panel.html()
         container = parent.querySelector('.controls')
@@ -376,6 +376,7 @@
 
       // Clear container
       try {
+        if (container)
         while (container.hasChildNodes()) {
           container.removeChild(container.lastChild)
         }
@@ -711,8 +712,8 @@
       let street = ''
       let segment = findClosestSegment(new OpenLayers.Geometry.Point(lon, lat).transform('EPSG:4326', 'EPSG:900913'), true, true)
       if (segment) {
-        city = segment.getAddress().getCity()
-        street = segment.getAddress().getStreetName()
+        city = segment.getAddress(W.model).getCity()
+        street = segment.getAddress(W.model).getStreetName()
 
         // to lon, lat
         let point = segment.closestPoint.transform('EPSG:900913', 'EPSG:4326')
@@ -1223,8 +1224,8 @@
 
       // unnamed roads, f**ing magic number
       if (
-        !onscreenSegments[s].getAddress().getStreet().getID() ||
-        onscreenSegments[s].getAddress().getStreet().getID() === 8325397)
+        !onscreenSegments[s].getAddress(W.model).getStreet().getID() ||
+        onscreenSegments[s].getAddress(W.model).getStreet().getID() === 8325397)
         continue
 
       let distanceToSegment = geometry.distanceTo(onscreenSegments[s].getOLGeometry(), { details: true })
@@ -1298,7 +1299,7 @@
 
     // POI Address Street Name
     let newStreet
-    let addressStreet = poi.getAddress().getStreet()?.getName() || ''
+    let addressStreet = poi.getAddress(W.model).getStreet()?.getName() || ''
     if (street) {
       let existStreet = detectStreet(street)
 
@@ -1325,7 +1326,7 @@
 
     // POI Address City
     let newCity
-    let addressCity = poi.getAddress().getCity()?.getName() || ''
+    let addressCity = poi.getAddress(W.model).getCity()?.getName() || ''
 
     // hardcoded value of common issue
     if (addressCity === 'поза НП') {
@@ -1363,14 +1364,14 @@
         countryID: W.model.getTopCountry().getID(),
         stateID: W.model.getTopState().getID(),
         cityName: newCity ? newCity : addressCity,
-        streetName: newStreet ? newStreet : poi.getAddress().getStreetName()
+        streetName: newStreet ? newStreet : poi.getAddress(W.model).getStreetName()
       }
       W.model.actionManager.add(new WazeActionUpdateFeatureAddress(poi, address))
     }
 
     // POI Address HouseNumber
     let newHN
-    let addressHN = poi.getAddress().attributes.houseNumber
+    let addressHN = poi.getAddress(W.model).attributes.houseNumber
     if (number) {
       // Normalize «korpus»
       number = number.replace(/^(\d+)к(\d+)$/i, '$1-$2')
