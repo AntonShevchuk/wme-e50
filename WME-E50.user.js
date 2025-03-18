@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         WME E50 Fetch POI Data
 // @name:uk      WME 🇺🇦 E50 Fetch POI Data
-// @version      0.10.14
+// @version      0.10.15
 // @description  Fetch information about the POI from external sources
 // @description:uk Скрипт дозволяє отримувати інформацію про POI зі сторонніх ресурсів
 // @license      MIT License
@@ -352,7 +352,9 @@
      * @return {Null}
      */
     onNone (event) {
-      // document.getElementById('panel-container').innerText = ''
+      if (this.settings.get('options', 'modal')) {
+        this.modal.html().remove()
+      }
     }
 
     /**
