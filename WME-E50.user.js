@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         WME E50 Fetch POI Data
 // @name:uk      WME 🇺🇦 E50 Fetch POI Data
-// @version      0.10.15
+// @version      0.10.16
 // @description  Fetch information about the POI from external sources
 // @description:uk Скрипт дозволяє отримувати інформацію про POI зі сторонніх ресурсів
 // @license      MIT License
@@ -36,7 +36,7 @@
 /* global I18n */
 /* global OpenLayers */
 /* global NavigationPoint */
-/* global WME, WMEBase, WMEUI, WMEUIHelper */
+/* global WME, WMEBase, WMEUI, WMEUIHelper, WMEUIHelperFieldset */
 /* global Container, Settings, SimpleCache, Tools  */
 
 (function () {
@@ -59,6 +59,10 @@
         copyData: 'Copy POI data to clipboard on click',
         lock: 'Lock POI to 2 level',
         keys: 'API keys',
+      },
+      ranges: {
+        title: 'Additional',
+        collapse: 'Collapse the lists longer than',
       },
       providers: {
         title: 'Providers',
@@ -92,6 +96,10 @@
         lock: 'Блокувати POI 2-м рівнем',
         keys: 'Ключі до API',
       },
+      ranges: {
+        title: 'Додаткові',
+        collapse: 'Складати перелік, більший за',
+      },
       providers: {
         title: 'Джерела',
         magic: 'Найближчий сегмент',
@@ -123,6 +131,10 @@
         copyData: 'При виборе, копировать в буфер обмена название и адрес POI',
         lock: 'Блокировать POI 2-м уровнем',
         keys: 'Ключи к API',
+      },
+      ranges: {
+        title: 'Дополнительно',
+        collapse: 'Складывать списки, которые больше',
       },
       providers: {
         title: 'Источники',
@@ -156,6 +168,10 @@
         lock: 'Verrouiller le POI au niveau 2',
         keys: 'API keys',
       },
+      ranges: {
+        title: 'Supplémentaire',
+        collapse: 'Réduire les listes plus grandes que',
+      },
       providers: {
         title: 'Sources',
         magic: 'Au plus proche du segment',
@@ -186,6 +202,9 @@
       copyData: true,
       lock: true,
     },
+    ranges: {
+      collapse: 3,
+    },
     providers: {
       magic: true,
       osm: false,
@@ -197,7 +216,7 @@
       ua: false,
     },
     keys: {
-      // Russian warship go f*ck yourself!
+      // Russian warship, go f*ck yourself!
       visicom: 'da' + '0110' + 'e25fac44b1b9c849296387dba8',
       gis: 'rubnkm' + '7490',
       here: 'GCFmOOrSp8882vFwTxEm' + ':' + 'O-LgGkoRfypnRuik0WjX9A',
@@ -269,6 +288,10 @@
     '.e50 div.controls label { white-space: normal; font-weight: 400; margin-top: 5px; }' +
     '.e50 div.controls input[type="text"] { float:right; }' +
 
+    '.e50 .e50-collapse label, .e50 .e50-collapse label { font-weight: 400 }' +
+    '.e50 .e50-collapse label::after { content: attr(data-after); display: inline-block; padding: 2px; margin: 2px; }' +
+    '.e50 .e50-collapse label::after { content: attr(data-after); display: inline-block; padding: 2px; margin: 2px; }' +
+
     'p.e50-info { border-top: 1px solid #ccc; color: #777; font-size: x-small; margin-top: 15px; padding-top: 10px; text-align: center; }'
 
   WMEUI.addStyle(STYLE)
@@ -296,6 +319,7 @@
       )
 
       // Setup options
+      /** @type {WMEUIHelperFieldset} */
       let fsOptions = this.helper.createFieldset(I18n.t(name).options.title)
       for (let item in settings.options) {
         if (settings.options.hasOwnProperty(item)) {
@@ -309,7 +333,33 @@
       }
       this.tab.addElement(fsOptions)
 
+      // Setup ranges
+      /** @type {WMEUIHelperFieldset} */
+      let fsRanges = this.helper.createFieldset(I18n.t(name).ranges.title)
+      for (let item in settings.ranges) {
+        if (settings.ranges.hasOwnProperty(item)) {
+          let range = fsRanges.addRange(
+            item,
+            I18n.t(name).ranges[item],
+            (event) => {
+              this.settings.set(['ranges', item], event.target.value)
+              event.target.nextSibling.setAttribute('data-after', event.target.value)
+            },
+            this.settings.get('ranges', item),
+            0,
+            10,
+            1
+          )
+          range.html()
+            .getElementsByTagName('label')[0]
+            .setAttribute('data-after', this.settings.get('ranges', item))
+
+        }
+      }
+      this.tab.addElement(fsRanges)
+
       // Setup providers settings
+      /** @type {WMEUIHelperFieldset} */
       let fsProviders = this.helper.createFieldset(I18n.t(name).providers.title)
       for (let item in settings.providers) {
         if (settings.providers.hasOwnProperty(item)) {
@@ -324,6 +374,7 @@
       this.tab.addElement(fsProviders)
 
       // Setup providers key's
+      /** @type {WMEUIHelperFieldset} */
       let fsKeys = this.helper.createFieldset(I18n.t(name).options.keys)
       let keys = this.settings.get('keys')
       for (let item in keys) {
@@ -654,13 +705,14 @@
       let fieldset = document.createElement('fieldset')
       let list = document.createElement('ul')
 
-      /*
-      if (this.response.length > 3) {
+      let collapse = parseInt(E50Instance.settings.get('ranges', 'collapse'))
+
+      if (collapse && this.response.length > collapse) {
         fieldset.className = 'collapsed'
       } else {
         fieldset.className = ''
       }
-      */
+
 
       for (let i = 0; i < this.response.length; i++) {
         let item = document.createElement('li')
