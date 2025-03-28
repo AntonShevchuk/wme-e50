@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         WME E50 Fetch POI Data
 // @name:uk      WME 🇺🇦 E50 Fetch POI Data
-// @version      0.10.16
+// @version      0.10.17
 // @description  Fetch information about the POI from external sources
 // @description:uk Скрипт дозволяє отримувати інформацію про POI зі сторонніх ресурсів
 // @license      MIT License
@@ -600,6 +600,7 @@
      */
     async search (lon, lat) {
       let key = this.uid + ':' + lon + ',' + lat
+
       if (E50Cache.has(key)) {
         this.response = E50Cache.get(key)
       } else {
@@ -650,14 +651,15 @@
     element (lon, lat, city, street, number, name = '') {
       // Raw data from provider
       let raw = [street, number, name].filter(x => !!x).join(', ')
-      console.groupCollapsed(city, street, number, name)
+
+      console.info(raw)
       {
         city = normalizeCity(city)
         street = normalizeStreet(street)
         number = normalizeNumber(number)
         name = normalizeName(name)
       }
-      console.groupEnd()
+
       let title = [street, number, name].filter(x => !!x).join(', ')
       return {
         lat: lat,
@@ -781,7 +783,7 @@
         let cities = W.model.cities.getObjectArray()
           .filter(c => c.getName()) // not empty city name
           .filter(c => c.getName() !== 'поза НП') // not "no" city (hardcoded mistake)
-          .filter(c => c.getID() !== 55344) // not EMPTY city for Ukraine
+          .filter(c => c.getID() !== 55344) // not an EMPTY city for Ukraine
         city = cities.length ? cities.shift() : null
       }
       if (!street) {
@@ -800,7 +802,7 @@
           ''
         )
       ]
-      console.groupEnd()
+      console.groupEnd(this.uid)
       return result
     }
   }
@@ -815,6 +817,7 @@
     }
 
     async request (lon, lat) {
+      let result = []
       let url = 'https://stat.waze.com.ua/address_map/address_map.php'
       let data = {
         lon: lon,
@@ -823,13 +826,13 @@
       }
       let response = await this.makeRequest(url, data).catch(e => console.error(this.uid, 'return error', e))
 
-      if (!response || !response.result || response.result !== 'success') {
-        return []
-      }
-
       console.groupCollapsed(this.uid)
-      let result = this.collection(response.data.polygons.Default)
-      console.groupEnd()
+      if (response && !response.result && response.result === 'success') {
+        result = this.collection(response.data.polygons.Default)
+      } else {
+        console.info('No response returned')
+      }
+      console.groupEnd(this.uid)
       return result
     }
 
@@ -872,6 +875,7 @@
     }
 
     async request (lon, lat) {
+      let result = []
       let url = 'https://api.visicom.ua/data-api/5.0/uk/geocode.json'
       let data = {
         near: lon + ',' + lat,
@@ -884,13 +888,13 @@
 
       let response = await this.makeRequest(url, data).catch(e => console.error(this.uid, 'return error', e))
 
-      if (!response || !response.features || !response.features.length) {
-        return []
-      }
-
       console.groupCollapsed(this.uid)
-      let result = this.collection(response.features)
-      console.groupEnd()
+      if (response && response.features && response.features.length) {
+        result = this.collection(response.features)
+      } else {
+        console.info('No response returned')
+      }
+      console.groupEnd(this.uid)
       return result
     }
 
@@ -920,6 +924,7 @@
     }
 
     async request (lon, lat) {
+      let result = []
       let url = 'https://nominatim.openstreetmap.org/reverse'
       let data = {
         lon: lon,
@@ -933,13 +938,13 @@
 
       let response = await this.makeRequest(url, data).catch(e => console.error(this.uid, 'return error', e))
 
-      if (!response || !response.address || !response.address.house_number) {
-        return []
-      }
-
       console.groupCollapsed(this.uid)
-      let result = [this.item(response)]
-      console.groupEnd()
+      if (response && response.address && response.address.house_number) {
+        result = [this.item(response)]
+      } else {
+        console.info('No response returned')
+      }
+      console.groupEnd(this.uid)
       return result
     }
 
@@ -973,6 +978,7 @@
     }
 
     async request (lon, lat) {
+      let result = []
       let url = 'https://catalog.api.2gis.com/2.0/geo/search'
       let data = {
         point: lon + ',' + lat,
@@ -986,13 +992,13 @@
 
       let response = await this.makeRequest(url, data).catch(e => console.error(this.uid, 'return error', e))
 
-      if (!response || !response.result || !response.result.items.length) {
-        return []
-      }
-
       console.groupCollapsed(this.uid)
-      let result = this.collection(response.result.items)
-      console.groupEnd()
+      if (response?.result?.items?.length > 0) {
+        result = this.collection(response.result.items)
+      } else {
+        console.info('No response returned')
+      }
+      console.groupEnd(this.uid)
       return result
     }
 
@@ -1041,6 +1047,7 @@
     }
 
     async request (lon, lat) {
+      let result = []
       let url = 'https://reverse.geocoder.api.here.com/6.2/reversegeocode.json'
       let data = {
         app_id: this.key[0],
@@ -1053,18 +1060,13 @@
 
       let response = await this.makeRequest(url, data).catch(e => console.error(this.uid, 'return error', e))
 
-      if (!response
-        || !response.Response
-        || !response.Response.View
-        || !response.Response.View
-        || !response.Response.View[0]
-        || !response.Response.View[0].Result) {
-        return []
-      }
-
       console.groupCollapsed(this.uid)
-      let result = this.collection(response.Response.View[0].Result.filter(x => x.MatchLevel === 'houseNumber'))
-      console.groupEnd()
+      if (response?.Response?.View?.[0]?.Result?.length) {
+        result = this.collection(response.Response.View[0].Result.filter(x => x.MatchLevel === 'houseNumber'))
+      } else {
+        console.info('No response returned')
+      }
+      console.groupEnd(this.uid)
       return result
     }
 
@@ -1092,6 +1094,7 @@
     }
 
     async request (lon, lat) {
+      let result = []
       let url = 'https://dev.virtualearth.net/REST/v1/Locations/' + lat + ',' + lon
       let data = {
         includeEntityTypes: 'Address',
@@ -1101,13 +1104,17 @@
 
       let response = await this.makeRequest(url, data).catch(e => console.error(this.uid, 'return error', e))
 
-      if (!response || !response.resourceSets || !response.resourceSets[0]) {
-        return []
-      }
-
       console.groupCollapsed(this.uid)
-      let result = this.collection(response.resourceSets[0].resources.filter(el => el.address.addressLine && el.address.addressLine.indexOf(',') > 0))
-      console.groupEnd()
+      if (response?.resourceSets?.[0]?.resources?.length) {
+        result = this.collection(
+          response.resourceSets[0].resources.filter(
+            el => el.address?.addressLine?.includes(',')
+          )
+        );
+      } else {
+        console.info('No response returned')
+      }
+      console.groupEnd(this.uid)
       return result
     }
 
@@ -1134,15 +1141,18 @@
     }
 
     async request (lon, lat) {
-      let response = await this.makeAPIRequest(lat, lon).catch(e => console.error(this.uid, 'return error', e))
-
-      if (!response || !response.length) {
-        return []
-      }
+      let result = []
+      let response = await this.makeAPIRequest(lat, lon)
+        .catch(e => null)
+        // .catch(e => console.error(this.uid, 'return error', e))
 
       console.groupCollapsed(this.uid)
-      let result = this.collection(response)
-      console.groupEnd()
+      if (response?.length) {
+        result = this.collection(response)
+      } else {
+        console.info('No response returned')
+      }
+      console.groupEnd(this.uid)
       return result
     }
 
@@ -1323,7 +1333,7 @@
 
     // POI Name
     let newName
-    // If exists name ask user to replace it or not
+    // If exists name, ask user to replace it or not
     // If not exists - use name or house number as name
     if (poi.attributes.name) {
       if (name && name !== poi.attributes.name) {
@@ -1360,8 +1370,8 @@
       let existStreet = detectStreet(street)
 
       if (existStreet) {
-        // We found street, all OK
-        console.log('✅ Street detected, is «' + existStreet + '»')
+        // We found the street, all OK
+        console.info('✅ Street detected, is «' + existStreet + '»')
         street = existStreet
       } else if (!window.confirm(I18n.t(NAME).questions.notFoundStreet + '\n«' + street + '»?')) {
         street = null
@@ -1394,11 +1404,11 @@
       let existCity = detectCity(city)
 
       if (existCity) {
-        // We found city, all OK
-        console.log('✅ City detected, is «' + existCity + '»')
+        // We found the city, all OK
+        console.info('✅ City detected, is «' + existCity + '»')
         city = existCity
       } else if(!window.confirm(I18n.t(NAME).questions.notFoundCity + '\n«' + city + '»?')) {
-        // We can't find city, and will ask to create new one, but not needed
+        // We can't find a city, and will ask to create a new one, but not needed
         city = null
       }
 
@@ -1452,9 +1462,9 @@
       }
     }
 
-    // If no entry point we would create it
+    // If no an entry point, we would create it
     if (E50Instance.settings.get('options', 'entryPoint') && poi.attributes.entryExitPoints.length === 0) {
-      // Create point based on data from external source
+      // Create point based on data from the external source
       let point = new OpenLayers.Geometry.Point(lon, lat).transform('EPSG:4326', 'EPSG:900913')
 
       // Check intersection with selected POI
@@ -1526,24 +1536,24 @@
    * @return {String|null}
    */
   function detectCity(city) {
-    // Get list of all available cities
+    // Get the list of all available cities
     let cities = W.model.cities.getObjectArray()
       .filter(city => city.getName())
       .filter(city => city.getName() !== 'поза НП')
       .map(city => city.getName())
 
     // More than one city, use city with best matching score
-    // Remove text in the "( )", Waze puts region name to the pair brackets
+    // Remove text in the "()", Waze puts region name to the pair brackets
     let best = findBestMatch(city, cities.map(city => city.replace(/( ?\(.*\))/gi, '')))
 
     if (best > -1) {
-      console.log('✅ City detected')
+      console.info('✅ City detected')
       return cities[best]
     } else if (cities.length === 1) {
-      console.log('❎ City doesn\'t found, uses default city')
+      console.info('❎ City doesn\'t found, uses default city')
       return cities.shift()
     } else {
-      console.log('❌ City doesn\'t found')
+      console.info('❌ City doesn\'t found')
       return null
     }
   }
@@ -1562,7 +1572,7 @@
 
     // Prepare street name
     street = street.replace(/[’']/, '\'')
-    // Remove text in the "( )", OSM puts alternative name to the pair brackets
+    // Remove text in the "()", OSM puts alternative name to the pair brackets
     street = street.replace(/( ?\(.*\))/gi, '')
     // Normalize title
     let regs = {
@@ -1706,7 +1716,7 @@
 
   /**
    * Calculates the distance between given points, returned in meters
-   * @function WazeWrap.Geometry.calculateDistance
+   * @function calculateDistance
    * @param {Array<OpenLayers.Geometry.Point>} pointArray An array of OpenLayers.Geometry.Point with which to measure the total distance. A minimum of 2 points is needed.
    */
   function calculateDistance (pointArray) {
