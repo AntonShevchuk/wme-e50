@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         WME E50 Fetch POI Data
 // @name:uk      WME 🇺🇦 E50 Fetch POI Data
-// @version      0.10.17
+// @version      0.10.18
 // @description  Fetch information about the POI from external sources
 // @description:uk Скрипт дозволяє отримувати інформацію про POI зі сторонніх ресурсів
 // @license      MIT License
@@ -73,7 +73,7 @@
         here: 'HERE',
         google: 'Google',
         visicom: 'Visicom',
-        ua: 'UA Adresses',
+        ua: 'UA Addresses',
       },
       questions: {
         changeName: 'Are you sure to change the name?',
@@ -181,7 +181,7 @@
         here: 'HERE',
         google: 'Google',
         visicom: 'Visicom',
-        ua: 'UA Adresses',
+        ua: 'UA Addresses',
       },
       questions: {
         changeName: 'Êtes-vous sûr de changer le nom ?',
@@ -826,8 +826,9 @@
       }
       let response = await this.makeRequest(url, data).catch(e => console.error(this.uid, 'return error', e))
 
+
       console.groupCollapsed(this.uid)
-      if (response && !response.result && response.result === 'success') {
+      if (response?.result && response.result === 'success') {
         result = this.collection(response.data.polygons.Default)
       } else {
         console.info('No response returned')
@@ -837,22 +838,14 @@
     }
 
     item (res) {
-      let data = res.name.split(", ")
 
-      data = data.filter(part => {
-        return !part.trim().match(/^\D+\sобл\.$/)
-        && !part.trim().match(/^\D+\sр-н?$/)
-        && !part.trim().match(/^р-н\s+\D+$/)
-        }
-      )
+      let data = res.name.split(",")
 
-      if (data.length < 3) {
-        return false
-      }
+      data = data.map(part => part.trim())
 
-      let number = data.pop()
-      let street = data.pop()
-      let city = data.pop()
+      let number = data.length ? data.pop() : null
+      let street = data.length ? data.pop() : null
+      let city = data.length ? data.pop() : null
 
       let parser = new OpenLayers.Format.WKT()
       parser.internalProjection = W.map.getProjectionObject()
@@ -889,7 +882,7 @@
       let response = await this.makeRequest(url, data).catch(e => console.error(this.uid, 'return error', e))
 
       console.groupCollapsed(this.uid)
-      if (response && response.features && response.features.length) {
+      if (response?.features?.length > 0) {
         result = this.collection(response.features)
       } else {
         console.info('No response returned')
@@ -916,7 +909,7 @@
   }
 
   /**
-   * Open Street Map
+   * OpenStreetMap
    */
   class OsmProvider extends Provider {
     constructor (container, settings) {
@@ -939,7 +932,7 @@
       let response = await this.makeRequest(url, data).catch(e => console.error(this.uid, 'return error', e))
 
       console.groupCollapsed(this.uid)
-      if (response && response.address && response.address.house_number) {
+      if (response?.address?.house_number) {
         result = [this.item(response)]
       } else {
         console.info('No response returned')
