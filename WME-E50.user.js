@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         WME E50 Fetch POI Data
 // @name:uk      WME 🇺🇦 E50 Fetch POI Data
-// @version      0.10.18
+// @version      0.10.19
 // @description  Fetch information about the POI from external sources
 // @description:uk Скрипт дозволяє отримувати інформацію про POI зі сторонніх ресурсів
 // @license      MIT License
@@ -886,6 +886,9 @@
         result = this.collection(response.features)
       } else {
         console.info('No response returned')
+        if (response?.status) {
+          console.info('Status:', response.status)
+        }
       }
       console.groupEnd(this.uid)
       return result
