@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         WME E50 Fetch POI Data
 // @name:uk      WME 🇺🇦 E50 Fetch POI Data
-// @version      0.10.19
+// @version      0.10.20
 // @description  Fetch information about the POI from external sources
 // @description:uk Скрипт дозволяє отримувати інформацію про POI зі сторонніх ресурсів
 // @license      MIT License
@@ -22,7 +22,7 @@
 // @grant        GM.xmlHttpRequest
 // @grant        GM.setClipboard
 // @require      https://update.greasyfork.org/scripts/389765/1090053/CommonUtils.js
-// @require      https://update.greasyfork.org/scripts/450160/1218867/WME-Bootstrap.js
+// @require      https://update.greasyfork.org/scripts/450160/1619452/WME-Bootstrap.js
 // @require      https://update.greasyfork.org/scripts/452563/1218878/WME.js
 // @require      https://update.greasyfork.org/scripts/450221/1137043/WME-Base.js
 // @require      https://update.greasyfork.org/scripts/450320/1555446/WME-UI.js
