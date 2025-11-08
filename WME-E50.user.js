@@ -36,7 +36,8 @@
 /* global I18n */
 /* global WMEBase, WMEUI, WMEUIHelper, WMEUIHelperFieldset */
 /* global Container, Settings, SimpleCache, Tools  */
-/* global turf  */
+/* global Node$1, Segment, Venue, VenueAddress, WmeSDK */
+/* global turf */
 
 (function () {
   'use strict'
