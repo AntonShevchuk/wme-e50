@@ -23,8 +23,8 @@
 // @grant        GM.xmlHttpRequest
 // @grant        GM.setClipboard
 // @require      https://update.greasyfork.org/scripts/389765/1090053/CommonUtils.js
-// @require      https://update.greasyfork.org/scripts/450160/1681948/WME-Bootstrap.js
-// @require      https://update.greasyfork.org/scripts/450221/1681856/WME-Base.js
+// @require      https://update.greasyfork.org/scripts/450160/1691572/WME-Bootstrap.js
+// @require      https://update.greasyfork.org/scripts/450221/1691071/WME-Base.js
 // @require      https://update.greasyfork.org/scripts/450320/1688694/WME-UI.js
 //
 // @require      https://cdn.jsdelivr.net/npm/@turf/turf@7.2.0/turf.min.js
@@ -32,10 +32,8 @@
 
 /* jshint esversion: 8 */
 /* global require */
-/* global $, jQuery, jQuery.Event */
+/* global $, jQuery */
 /* global I18n */
-/* global OpenLayers */
-/* global NavigationPoint */
 /* global WMEBase, WMEUI, WMEUIHelper, WMEUIHelperFieldset */
 /* global Container, Settings, SimpleCache, Tools  */
 /* global turf  */
@@ -1431,7 +1429,7 @@
     // Lock to level 2
     if (E50Instance.settings.get('options', 'lock')
       && venue.lockRank < 1
-      && W.loginManager.user.getRank() > 0) {
+      && E50Instance.wmeSDK.State.getUserInfo().rank > 0) {
 
       E50Instance.wmeSDK.DataModel.Venues.updateVenue({
         venueId: venue.id,
