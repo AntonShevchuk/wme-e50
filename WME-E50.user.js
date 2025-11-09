@@ -2,7 +2,7 @@
 // @name         WME E50 Fetch POI Data
 // @name:uk      WME 🇺🇦 E50 Fetch POI Data
 // @name:ru      WME 🇺🇦 E50 Fetch POI Data
-// @version      0.11.0
+// @version      0.11.1
 // @description  Fetch information about the POI from external sources
 // @description:uk Скрипт дозволяє отримувати інформацію про POI зі сторонніх ресурсів
 // @description:ru Скрипт для получения информации о POI с внешних ресурсов
@@ -26,7 +26,6 @@
 // @require      https://update.greasyfork.org/scripts/450160/1691572/WME-Bootstrap.js
 // @require      https://update.greasyfork.org/scripts/450221/1691071/WME-Base.js
 // @require      https://update.greasyfork.org/scripts/450320/1688694/WME-UI.js
-//
 // @require      https://cdn.jsdelivr.net/npm/@turf/turf@7.2.0/turf.min.js
 // ==/UserScript==
 
