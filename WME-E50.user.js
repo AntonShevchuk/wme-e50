@@ -1315,10 +1315,14 @@
       if (name && name !== venue.name) {
         if (window.confirm(I18n.t(NAME).questions.changeName + '\n«' + venue.name + '» ⟶ «' + name + '»?')) {
           newName = name
+        } else {
+          newName = venue.name
         }
       } else if (number && number !== venue.name) {
         if (window.confirm(I18n.t(NAME).questions.changeName + '\n«' + venue.name + '» ⟶ «' + number + '»?')) {
           newName = number
+        } else {
+          newName = venue.name
         }
       }
     } else if (name) {
@@ -1338,7 +1342,8 @@
         }
       }
     }
-    if (newName) {
+    // Set only really new name
+    if (newName && newName !== venue.name) {
       E50Instance.wmeSDK.DataModel.Venues.updateVenue({
         venueId: venue.id,
         name: newName
@@ -1360,21 +1365,17 @@
 
     let city = getCityById(cityId)
 
-    // Apply a Street name
+    let newStreetId
+
+    // Apply a new Street
     if (streetId && streetId !== address.street.id && '' !== address.street.name) {
       // Ask to replace street with new one
       if (window.confirm(I18n.t(NAME).questions.changeStreet + '\n«' + address.street.name + '» ⟶ «' + streetName + '»?')) {
-        E50Instance.wmeSDK.DataModel.Venues.updateAddress({
-          venueId: venue.id,
-          streetId: streetId
-        })
+        newStreetId = streetId
       }
     } else if (streetId) {
-      // Apply new street if street is not assigned or name is empty
-      E50Instance.wmeSDK.DataModel.Venues.updateAddress({
-        venueId: venue.id,
-        streetId: streetId
-      })
+      // Apply new street if the current street is not assigned or name is empty
+      newStreetId = streetId
     } else if (!streetId) {
       // We don't found the street
       // - ask to create new one
@@ -1391,9 +1392,20 @@
         // use empty street
         street = getStreet(city.id, '')
       }
+
+      if (street.id !== address.street.id && '' !== address.street.name) {
+        if (window.confirm(I18n.t(NAME).questions.changeStreet + '\n«' + address.street.name + '» ⟶ «' + streetName + '»?')) {
+          newStreetId = street.id
+        }
+      } else {
+        newStreetId = street.id
+      }
+    }
+
+    if (newStreetId && newStreetId !== address.street.id && '' !== address.street.name) {
       E50Instance.wmeSDK.DataModel.Venues.updateAddress({
         venueId: venue.id,
-        streetId: street.id
+        streetId: newStreetId
       })
     }
 
