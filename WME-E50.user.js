@@ -2,7 +2,7 @@
 // @name         WME E50 Fetch POI Data
 // @name:uk      WME 🇺🇦 E50 Fetch POI Data
 // @name:ru      WME 🇺🇦 E50 Fetch POI Data
-// @version      0.11.1
+// @version      0.11.10
 // @description  Fetch information about the POI from external sources
 // @description:uk Скрипт дозволяє отримувати інформацію про POI зі сторонніх ресурсів
 // @description:ru Скрипт для получения информации о POI с внешних ресурсов
@@ -511,7 +511,7 @@
 
       let providers = []
 
-      let country = this.wmeSDK.DataModel.Countries.getTopCountry().id
+      let country = this.wmeSDK.DataModel.Countries.getTopCountry()?.id || 232
 
       let settings = LOCALE[country]
 
