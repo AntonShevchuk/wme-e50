@@ -2,7 +2,7 @@
 // @name         WME E50 Fetch POI Data
 // @name:uk      WME 🇺🇦 E50 Fetch POI Data
 // @name:ru      WME 🇺🇦 E50 Fetch POI Data
-// @version      0.11.11
+// @version      0.11.12
 // @description  Fetch information about the POI from external sources
 // @description:uk Скрипт дозволяє отримувати інформацію про POI зі сторонніх ресурсів
 // @description:ru Скрипт для получения информации о POI с внешних ресурсов
@@ -1383,6 +1383,9 @@
         if (window.confirm(I18n.t(NAME).questions.notFoundStreet + '\n«' + streetName + '»?')) {
           E50Instance.log('Create a new street')
           street = getStreet(city.id, streetName)
+        } else if ('' !== address.street.name) {
+          E50Instance.log('Use the current street')
+          street = E50Instance.wmeSDK.DataModel.Streets.getById( { streetId } )
         } else {
           E50Instance.log('Use the empty street')
           street = getStreet(city.id, '')
