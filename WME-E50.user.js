@@ -2,7 +2,7 @@
 // @name         WME E50 Fetch POI Data
 // @name:uk      WME 🇺🇦 E50 Fetch POI Data
 // @name:ru      WME 🇺🇦 E50 Fetch POI Data
-// @version      0.11.12
+// @version      0.11.13
 // @description  Fetch information about the POI from external sources
 // @description:uk Скрипт дозволяє отримувати інформацію про POI зі сторонніх ресурсів
 // @description:ru Скрипт для получения информации о POI с внешних ресурсов
@@ -1292,16 +1292,22 @@
 
     let address = E50Instance.wmeSDK.DataModel.Venues.getAddress({ venueId: venue.id })
 
-    E50Instance.group('Apply data')
-
     let lat = parseFloat(this.dataset.lat)
     let lon = parseFloat(this.dataset.lon)
-    let name = this.dataset.name
+
+    if (isNaN(lat) || isNaN(lon)) {
+      E50Instance.log('Invalid coordinates')
+      return
+    }
+
+    E50Instance.group('Apply data')
+
+    let name = this.dataset.name ? this.dataset.name.trim() : ''
     let cityId = isNaN(parseInt(this.dataset.cityId)) ? null : parseInt(this.dataset.cityId)
-    let cityName = this.dataset.cityName
+    let cityName = this.dataset.cityName ? this.dataset.cityName.trim() : ''
     let streetId = isNaN(parseInt(this.dataset.streetId)) ? null : parseInt(this.dataset.streetId)
-    let streetName = this.dataset.streetName
-    let number = this.dataset.number
+    let streetName = this.dataset.streetName ? this.dataset.streetName.trim() : ''
+    let number = this.dataset.number ? this.dataset.number.trim() : ''
 
     if (E50Instance.settings.get('options', 'copyData')) {
       toClipboard([name, number, streetName, cityName].filter(x => !!x).join(' '))
@@ -1368,7 +1374,9 @@
     let newStreetId
 
     // Apply a new Street
-    if (streetId && streetId !== address.street.id && '' !== address.street.name) {
+    if (streetId && address.street
+      && streetId !== address.street.id
+      && '' !== address.street.name) {
       E50Instance.log('Ask to replace the street with new one')
       if (window.confirm(I18n.t(NAME).questions.changeStreet + '\n«' + address.street.name + '» ⟶ «' + streetName + '»?')) {
         newStreetId = streetId
@@ -1383,7 +1391,7 @@
         if (window.confirm(I18n.t(NAME).questions.notFoundStreet + '\n«' + streetName + '»?')) {
           E50Instance.log('Create a new street')
           street = getStreet(city.id, streetName)
-        } else if ('' !== address.street.name) {
+        } else if ('' !== address.street?.name) {
           E50Instance.log('Use the current street')
           street = E50Instance.wmeSDK.DataModel.Streets.getById( { streetId } )
         } else {
@@ -1395,7 +1403,7 @@
         street = getStreet(city.id, '')
       }
 
-      if (street.id !== address.street.id && '' !== address.street.name) {
+      if (street.id !== address.street?.id && '' !== address.street?.name) {
         if (window.confirm(I18n.t(NAME).questions.changeStreet + '\n«' + address.street.name + '» ⟶ «' + streetName + '»?')) {
           newStreetId = street.id
         }
@@ -1404,7 +1412,7 @@
       }
     }
 
-    if (newStreetId && newStreetId !== address.street.id) {
+    if (newStreetId && newStreetId !== address.street?.id) {
       E50Instance.log('Street ID: ' +  newStreetId)
       E50Instance.wmeSDK.DataModel.Venues.updateAddress({
         venueId: venue.id,
@@ -1458,12 +1466,13 @@
 
       let point = turf.point([lon, lat])
 
-      if (turf.pointsWithinPolygon(point, venue.geometry).features?.length > 0) {
-        // new point is inside the venue geometry
-        E50Instance.log('use the point as coordinates for new Navigation Point')
+      if (venue.geometry.type === 'Point') {
+        E50Instance.log('use the coordinates for new Navigation Point for Point')
+      } else if (turf.pointsWithinPolygon(point, venue.geometry).features?.length > 0) {
+        E50Instance.log('use the coordinates for new Navigation Point inside Polygon')
       } else {
         // point is outside the venue geometry
-        E50Instance.log('use the intersection of venue and vector as coordinates for new Navigation Point')
+        E50Instance.log('use the intersection of Polygon and vector to coordinates as new Navigation Point')
         let centroid = turf.centroid(venue.geometry);
         let line = turf.lineString([
           centroid.geometry.coordinates,
@@ -1472,6 +1481,8 @@
         let featureCollection = turf.lineIntersect(venue.geometry, line);
         point = featureCollection.features?.pop()
       }
+
+      E50Instance.log('create a Navigation Point')
 
       // create navigation point
       let navigationPoint =  {
