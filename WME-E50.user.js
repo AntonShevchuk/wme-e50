@@ -2,7 +2,7 @@
 // @name         WME E50 Fetch POI Data
 // @name:uk      WME 🇺🇦 E50 Fetch POI Data
 // @name:ru      WME 🇺🇦 E50 Fetch POI Data
-// @version      0.11.13
+// @version      0.11.14
 // @description  Fetch information about the POI from external sources
 // @description:uk Скрипт дозволяє отримувати інформацію про POI зі сторонніх ресурсів
 // @description:ru Скрипт для получения информации о POI с внешних ресурсов
@@ -732,6 +732,7 @@
       }
 
       let title = [street, number, name].filter(x => !!x).join(', ')
+
       return {
         lat: lat,
         lon: lon,
@@ -817,12 +818,12 @@
       a.dataset.lat = item.lat
       a.dataset.lon = item.lon
       a.dataset.cityId = item.cityId || ''
-      a.dataset.cityName = item.cityName
+      a.dataset.cityName = item.cityName || ''
       a.dataset.streetId = item.streetId || ''
-      a.dataset.streetName = item.streetName
+      a.dataset.streetName = item.streetName || ''
       a.dataset.number = item.number
       a.dataset.name = item.name
-      a.innerText = item.title
+      a.innerText = item.title || item.raw
       a.title = item.raw
       a.className = NAME + '-link'
       if (!item.cityId || !item.streetId) {
@@ -1300,7 +1301,7 @@
       return
     }
 
-    E50Instance.group('Apply data')
+    E50Instance.group('Apply data to selected Venue ↓')
 
     let name = this.dataset.name ? this.dataset.name.trim() : ''
     let cityId = isNaN(parseInt(this.dataset.cityId)) ? null : parseInt(this.dataset.cityId)
@@ -1318,29 +1319,39 @@
     // If exists name, ask user to replace it or not
     // If not exists - use name or house number as name
     if (venue.name) {
+      E50Instance.log('The Venue has a Name «' + venue.name + '»' )
       if (name && name !== venue.name) {
+        E50Instance.log('Replace a Venue Name with a new one?' )
         if (window.confirm(I18n.t(NAME).questions.changeName + '\n«' + venue.name + '» ⟶ «' + name + '»?')) {
           newName = name
+          E50Instance.log(' — Yes, a new Venue Name is «' + newName + '»' )
         } else {
           newName = venue.name
+          E50Instance.log(' — No, use a old Venue Name «' + newName + '»' )
         }
       } else if (number && number !== venue.name) {
+        E50Instance.log('Replace the Venue Name with a number?' )
         if (window.confirm(I18n.t(NAME).questions.changeName + '\n«' + venue.name + '» ⟶ «' + number + '»?')) {
           newName = number
+          E50Instance.log(' — Yes, a new Venue Name is «' + newName + '»' )
         } else {
           newName = venue.name
+          E50Instance.log(' — No, use a old Venue Name «' + newName + '»' )
         }
       }
     } else if (name) {
       newName = name
+      E50Instance.log('Use a new Venue Name «' + newName + '»' )
     } else if (number) {
       newName = number
+      E50Instance.log('Use a new Venue Name «' + newName + '»' )
       // Update alias for korpus
       if ((new RegExp('[0-9]+[а-яі]?к[0-9]+', 'i')).test(number)) {
         let alias = number.replace('к', ' корпус ')
         let aliases = venue.aliases?.slice() || []
         if (aliases.indexOf(alias) === -1) {
           aliases.push(alias)
+          E50Instance.log(' → Apply a new Venue Alias «' + alias + '»' )
           E50Instance.wmeSDK.DataModel.Venues.updateVenue({
             venueId: venue.id,
             aliases: aliases
@@ -1350,6 +1361,7 @@
     }
     // Set only really new name
     if (newName && newName !== venue.name) {
+      E50Instance.log(' → Apply a new Venue Name «' + newName + '»' )
       E50Instance.wmeSDK.DataModel.Venues.updateVenue({
         venueId: venue.id,
         name: newName
@@ -1358,15 +1370,18 @@
 
     // Apply a City name
     if (!cityId && cityName) {
+      E50Instance.log('We don\'t find a City with name «' + cityName + '», create a new one?' )
       // Ask to create new City
       if (window.confirm(I18n.t(NAME).questions.notFoundCity + '\n«' + cityName + '»?')) {
         cityId = getCity(cityName).id
+        E50Instance.log(' — Yes, create new City «' + cityName + '»' )
       } else {
         cityId = getCity().id
+        E50Instance.log(' — No, use the empty City with ID «' + cityId + '»' )
       }
     } else if (!cityId && !cityName) {
-      // empty city
       cityId = getCity().id
+      E50Instance.log('We don\'t find a City and use the empty City with ID «' + cityId + '»' )
     }
 
     let city = getCityById(cityId)
@@ -1377,35 +1392,44 @@
     if (streetId && address.street
       && streetId !== address.street.id
       && '' !== address.street.name) {
-      E50Instance.log('Ask to replace the street with new one')
+      E50Instance.log('Replace the Street with a new one?')
       if (window.confirm(I18n.t(NAME).questions.changeStreet + '\n«' + address.street.name + '» ⟶ «' + streetName + '»?')) {
         newStreetId = streetId
+        E50Instance.log(' — Yes, use a new Street Name «' + streetName + '»')
+      } else {
+        E50Instance.log(' — No, use a old Street Name «' + address.street.name + '»')
       }
     } else if (streetId) {
-      E50Instance.log('Apply new street if the current street is not assigned or name is empty')
       newStreetId = streetId
+      E50Instance.log('Use a new Street with ID «' + newStreetId + '»')
     } else if (!streetId) {
-      E50Instance.log('We don\'t found the street')
       let street
       if (streetName) {
+        E50Instance.log('We don\'t find the street «' + streetName + '»')
+        E50Instance.log('Create a new Street?')
         if (window.confirm(I18n.t(NAME).questions.notFoundStreet + '\n«' + streetName + '»?')) {
-          E50Instance.log('Create a new street')
           street = getStreet(city.id, streetName)
+          E50Instance.log(' — Yes, create a new Street «' + streetName + '»')
         } else if ('' !== address.street?.name) {
-          E50Instance.log('Use the current street')
           street = E50Instance.wmeSDK.DataModel.Streets.getById( { streetId } )
+          E50Instance.log(' — No, use the current Street «' + street.name + '»')
         } else {
-          E50Instance.log('Use the empty street')
           street = getStreet(city.id, '')
+          E50Instance.log(' — No, use the empty Street with ID «' + street.id + '»')
         }
       } else {
-        E50Instance.log('Use the empty street')
+        E50Instance.log('We don\'t find the street')
         street = getStreet(city.id, '')
+        E50Instance.log('Use the empty Street with ID «' + street.id + '»')
       }
 
       if (street.id !== address.street?.id && '' !== address.street?.name) {
+        E50Instance.log('Replace the Street with new one?')
         if (window.confirm(I18n.t(NAME).questions.changeStreet + '\n«' + address.street.name + '» ⟶ «' + streetName + '»?')) {
           newStreetId = street.id
+          E50Instance.log(' — Yes, use a new Street Name «' + streetName + '»')
+        } else {
+          E50Instance.log(' — No, use the current Street Name «' + address.street.name + '»')
         }
       } else {
         newStreetId = street.id
@@ -1413,40 +1437,38 @@
     }
 
     if (newStreetId && newStreetId !== address.street?.id) {
-      E50Instance.log('Street ID: ' +  newStreetId)
+      E50Instance.log('Apply a new Street ID «' + newStreetId + '»' )
       E50Instance.wmeSDK.DataModel.Venues.updateAddress({
         venueId: venue.id,
         streetId: newStreetId
       })
     }
 
+    let newHouseNumber
+
     // Apply a House Number
     if (number) {
-      // Normalize «korpus»
-      number = number.replace(/^(\d+)к(\d+)$/i, '$1-$2')
-      // Check number for invalid format for Waze
-      if ((new RegExp('^[0-9]+[а-яі][к|/][0-9]+$', 'i')).test(number)) {
-        // Skip this step
-        console.log(
-          '%c' + NAME + ': %cskipped «' + number + '»',
-          'color: #0DAD8D; font-weight: bold',
-          'color: dimgray; font-weight: normal'
-        )
-      } else if (address.houseNumber) {
+      if (address.houseNumber) {
+        E50Instance.log('Replace the House Number with a new one?')
         if (address.houseNumber !== number &&
           window.confirm(I18n.t(NAME).questions.changeNumber + '\n«' + address.houseNumber + '» ⟶ «' + number + '»?')) {
-
-          E50Instance.wmeSDK.DataModel.Venues.updateAddress({
-            venueId: venue.id,
-            houseNumber: number
-          })
+          newHouseNumber = number
+          E50Instance.log(' — Yes, use a new House Number «' + number + '»')
+        } else {
+          E50Instance.log(' — No, use the current House Number «' + address.houseNumber + '»')
         }
       } else {
-        E50Instance.wmeSDK.DataModel.Venues.updateAddress({
-          venueId: venue.id,
-          houseNumber: number
-        })
+        newHouseNumber = number
+        E50Instance.log('Use a new House Number «' + number + '»')
       }
+    }
+
+    if (newHouseNumber) {
+      E50Instance.log('Apply a new House Number «' + newHouseNumber + '»' )
+      E50Instance.wmeSDK.DataModel.Venues.updateAddress({
+        venueId: venue.id,
+        houseNumber: newHouseNumber
+      })
     }
 
     // Lock to level 2
@@ -1454,6 +1476,7 @@
       && venue.lockRank < 1
       && E50Instance.wmeSDK.State.getUserInfo().rank > 0) {
 
+      E50Instance.log('Apply a new Lock Rank «' + (1+1) + '»' )
       E50Instance.wmeSDK.DataModel.Venues.updateVenue({
         venueId: venue.id,
         lockRank: 1
@@ -1464,15 +1487,17 @@
     if (E50Instance.settings.get('options', 'entryPoint')
         && venue.navigationPoints?.length === 0) {
 
+      E50Instance.log('Create a Navigation Point')
+
       let point = turf.point([lon, lat])
 
       if (venue.geometry.type === 'Point') {
-        E50Instance.log('use the coordinates for new Navigation Point for Point')
+        E50Instance.log('Use the coordinates for new Navigation Point for Point')
       } else if (turf.pointsWithinPolygon(point, venue.geometry).features?.length > 0) {
-        E50Instance.log('use the coordinates for new Navigation Point inside Polygon')
+        E50Instance.log('Use the coordinates for new Navigation Point inside Polygon')
       } else {
         // point is outside the venue geometry
-        E50Instance.log('use the intersection of Polygon and vector to coordinates as new Navigation Point')
+        E50Instance.log('Use the intersection of Polygon and vector to coordinates as new Navigation Point')
         let centroid = turf.centroid(venue.geometry);
         let line = turf.lineString([
           centroid.geometry.coordinates,
@@ -1481,8 +1506,6 @@
         let featureCollection = turf.lineIntersect(venue.geometry, line);
         point = featureCollection.features?.pop()
       }
-
-      E50Instance.log('create a Navigation Point')
 
       // create navigation point
       let navigationPoint =  {
@@ -1493,10 +1516,12 @@
         point: point.geometry
       }
 
+      E50Instance.log('Apply a new Navigation Point')
       E50Instance.wmeSDK.DataModel.Venues.replaceNavigationPoints({
         venueId: venue.id,
         navigationPoints: [navigationPoint]
       })
+
     }
 
     E50Instance.groupEnd()
@@ -1522,7 +1547,7 @@
 
   /**
    * Normalize the name:
-   *  - remove № and #chars
+   *  - remove № and # chars
    *  - remove dots
    * @param  {String} name
    * @return {String}
@@ -1624,6 +1649,10 @@
    * @return {[Number,String]}
    */
   function detectStreet (street) {
+    // It can be empty
+    if (street.trim() === '') {
+      return [null, null]
+    }
 
     // Get all streets
     let streets = E50Instance.wmeSDK.DataModel.Streets.getAll()
@@ -1696,9 +1725,9 @@
     number = number.replace(/(.*)[-/]([а-яі])/gi, '$1$2')
     // valid number format
     //  123А  123А/321 123А/321Б 123к1 123Ак2
-    if (!number.match(/^\d+[а-яі]?([/к]\d+[а-яі]?)?$/gi)) {
+    /*if (!number.match(/^\d+[а-яі]?([/к]\d+[а-яі]?)?$/gi)) {
       return ''
-    }
+    }*/
     return number
   }
 
@@ -1712,7 +1741,7 @@
     text = text.replace(/'/g, '')
     GM.setClipboard(text)
     console.log(
-      '%c' + NAME + ': %ccopied «' + text + '»',
+      '%c' + NAME + ': %cCopied «' + text + '» to the clipboard',
       'color: #0DAD8D; font-weight: bold',
       'color: dimgray; font-weight: normal'
     )
