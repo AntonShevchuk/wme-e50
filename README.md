@@ -1,18 +1,18 @@
-# WME E50
-Fetch information about the POI from external sources
+# WME 🇺🇦 E50
+Fetch information about the Place from external sources
 
-![](screenshot.png)
+![Options for a Place](screenshot.png)
 
 
-![](example.gif)
+![Example of usage](example.gif)
 
 ## Settings
 
-![](settings.png)
+![Settings](settings.png)
 
 ## Console
 
-![](console.png)
+![Console output](console.png)
 
 ## Links
 
