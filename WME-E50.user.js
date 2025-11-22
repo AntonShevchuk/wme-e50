@@ -2,7 +2,7 @@
 // @name         WME E50 Fetch POI Data
 // @name:uk      WME 🇺🇦 E50 Fetch POI Data
 // @name:ru      WME 🇺🇦 E50 Fetch POI Data
-// @version      0.11.14
+// @version      0.11.16
 // @description  Fetch information about the POI from external sources
 // @description:uk Скрипт дозволяє отримувати інформацію про POI зі сторонніх ресурсів
 // @description:ru Скрипт для получения информации о POI с внешних ресурсов
@@ -1351,7 +1351,7 @@
         let aliases = venue.aliases?.slice() || []
         if (aliases.indexOf(alias) === -1) {
           aliases.push(alias)
-          E50Instance.log(' → Apply a new Venue Alias «' + alias + '»' )
+          E50Instance.log('Apply a new Venue Alias «' + alias + '»' )
           E50Instance.wmeSDK.DataModel.Venues.updateVenue({
             venueId: venue.id,
             aliases: aliases
@@ -1361,7 +1361,7 @@
     }
     // Set only really new name
     if (newName && newName !== venue.name) {
-      E50Instance.log(' → Apply a new Venue Name «' + newName + '»' )
+      E50Instance.log('Apply a new Venue Name «' + newName + '»' )
       E50Instance.wmeSDK.DataModel.Venues.updateVenue({
         venueId: venue.id,
         name: newName
@@ -1411,7 +1411,7 @@
           street = getStreet(city.id, streetName)
           E50Instance.log(' — Yes, create a new Street «' + streetName + '»')
         } else if ('' !== address.street?.name) {
-          street = E50Instance.wmeSDK.DataModel.Streets.getById( { streetId } )
+          street = E50Instance.wmeSDK.DataModel.Streets.getById( { streetId: address.street.id } )
           E50Instance.log(' — No, use the current Street «' + street.name + '»')
         } else {
           street = getStreet(city.id, '')
