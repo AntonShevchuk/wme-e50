@@ -2,7 +2,7 @@
 // @name         WME E50 Fetch POI Data
 // @name:uk      WME 🇺🇦 E50 Fetch POI Data
 // @name:ru      WME 🇺🇦 E50 Fetch POI Data
-// @version      0.12.2
+// @version      0.12.3
 // @description  Fetch information about the POI from external sources
 // @description:uk Скрипт дозволяє отримувати інформацію про POI зі сторонніх ресурсів
 // @description:ru Скрипт для получения информации о POI с внешних ресурсов
@@ -53,6 +53,7 @@
         modal: 'Use modal window',
         transparent: 'Transparent modal window',
         entryPoint: 'Create Entry Point if not exists',
+        externalProvider: 'Show pointer to linked place',
         copyData: 'Copy POI data to clipboard on click',
         lock: 'Lock POI to 2 level',
         keys: 'API keys',
@@ -89,6 +90,7 @@
         modal: 'Використовувати окрему панель',
         transparent: 'Напівпрозора панель',
         entryPoint: 'Створювати точку в\'їзду, якщо відсутня',
+        externalProvider: 'Відображати пов\'язане місце',
         copyData: 'При виборі, копіювати до буферу обміну назву та адресу POI',
         lock: 'Блокувати POI 2-м рівнем',
         keys: 'Ключі до API',
@@ -125,6 +127,7 @@
         modal: 'Использовать отдельную панель',
         transparent: 'Полупрозрачная панель',
         entryPoint: 'Создавать точку въезда если отсутствует',
+        externalProvider: 'Показывать связанное место',
         copyData: 'При виборе, копировать в буфер обмена название и адрес POI',
         lock: 'Блокировать POI 2-м уровнем',
         keys: 'Ключи к API',
@@ -196,6 +199,7 @@
       modal: true,
       transparent: false,
       entryPoint: true,
+      externalProvider: false,
       copyData: true,
       lock: true,
     },
@@ -288,6 +292,9 @@
     '.form-group.e50 div.controls label { white-space: normal; font-weight: normal; margin-top: 5px; line-height: 18px; font-size: 13px; }' +
     '.form-group.e50 div.controls input[type="text"] { float:right; }' +
     '.form-group.e50 div.controls input[type="number"] { float:right; width: 60px; text-align:right; }' +
+
+    '.distance-over-200 { background-color: #f08a24; }' +
+    '.distance-over-1000 { background-color: #ed503b; }' +
 
     'p.e50-info { border-top: 1px solid #ccc; color: #777; font-size: x-small; margin-top: 15px; padding-top: 10px; text-align: center; }' +
     '#sidebar p.e50-blue { background-color:#0057B8;color:white;height:32px;text-align:center;line-height:32px;font-size:24px;margin:0; }' +
@@ -471,8 +478,6 @@
       const from = turf.centroid(poi.geometry)
       const to = turf.point([lon, lat], { styleName: "styleNode" }, { id: `node_${lon}_${lat}` });
 
-      const distance = Math.round( turf.distance(to, from)  * 1000)
-
       this.wmeSDK.Map.addFeatureToLayer({ layerName: this.name, feature: to });
 
       const lineCoordinates = [
@@ -480,11 +485,17 @@
         to.geometry.coordinates,
       ];
 
+      const distance = Math.round( turf.distance(to, from) * 1000)
+
+      const label = (distance > 2000)
+        ? (distance / 1000).toFixed(1) + 'km'
+        : distance + 'm'
+
       // https://www.waze.com/editor/sdk/interfaces/index.SDK.FeatureStyle.html
       const line = turf.lineString(lineCoordinates, {
         styleName: "styleLine",
         style: {
-          label: distance + 'm',
+          label: label,
         },
       }, { id: `line_${lon}_${lat}` });
 
@@ -552,13 +563,11 @@
         console.error(e)
       }
 
-      let poi = model
-
-      if (!poi) {
+      if (!model) {
         return
       }
 
-      let feature = turf.centroid(poi.geometry)
+      let feature = turf.centroid(model.geometry)
 
       let [lon, lat] = feature.geometry.coordinates;
 
@@ -635,6 +644,47 @@
           .then(() => Google.render())
           .catch(() => this.log(':('))
         providers.push(providerPromise)
+      }
+
+      if (this.settings.get('options', 'externalProvider')) {
+        if (model.externalProviderIds?.length) {
+          let Place = new GooglePlace
+
+          let items = element.querySelectorAll('.external-providers-control .external-provider')
+
+          for (let i = 0; i < model.externalProviderIds.length; i++) {
+            let externalProviderId = model.externalProviderIds[i]
+            let item = items[i]
+
+            Place
+              .makeDetailsRequest(externalProviderId)
+              .then(details => {
+                let extLat = details.geometry.location.lat()
+                let extLng = details.geometry.location.lng()
+
+                let distance = turf.distance(
+                  turf.point([lon, lat]),
+                  turf.point([extLng, extLat]),
+                  {
+                    units: 'meters'
+                  }
+                )
+
+                item.dataset.distance = Math.round(distance)
+                item.dataset.lat = extLat
+                item.dataset.lon = extLng
+
+                item.classList.add(this.name + '-external')
+
+                if (distance > 1000) {
+                  item.classList.add('distance-over-1000')
+                } else if (distance > 200) {
+                  item.classList.add('distance-over-200')
+                }
+              })
+              .catch(() => { this.log(':(') })
+          }
+        }
       }
 
       Promise
@@ -911,7 +961,6 @@
           venueId: venue.id,
           navigationPoints: [navigationPoint]
         })
-
       }
 
       this.groupEnd()
@@ -976,7 +1025,7 @@
         url = url + '?' + query
       }
 
-      console.log(url)
+      // console.log(url)
 
       return new Promise((resolve, reject) => {
         GM.xmlHttpRequest({
@@ -1055,9 +1104,10 @@
      * @param  {String} street
      * @param  {String} number
      * @param  {String} name
+     * @param  {String} reference
      * @return {{number: *, cityId: Number, cityName: *, streetId: Number, streetName: *, name: *, raw: *, lon: *, title: *, lat: *}}
      */
-    element (lon, lat, city, street, number, name = '') {
+    element (lon, lat, city, street, number, name = '', reference = '') {
       // Raw data from provider
       let raw = [city, street, number, name].filter(x => !!x).join(', ')
 
@@ -1092,6 +1142,7 @@
         name: name,
         title: title,
         raw: raw,
+        reference: reference
       }
     }
 
@@ -1114,9 +1165,9 @@
      * @private
      */
     _panel () {
-      let div = document.createElement('div')
-      div.id = NAME.toLowerCase() + '-' + this.name
-      div.className = NAME.toLowerCase()
+      let    div = document.createElement('div')
+             div.id = NAME.toLowerCase() + '-' + this.name
+             div.className = NAME.toLowerCase()
       return div
     }
 
@@ -1136,7 +1187,6 @@
       } else {
         fieldset.className = ''
       }
-
 
       for (let i = 0; i < this.response.length; i++) {
         let item = document.createElement('li')
@@ -1171,6 +1221,7 @@
       a.dataset.streetName = item.streetName || ''
       a.dataset.number = item.number
       a.dataset.name = item.name
+      a.dataset.reference = item.reference || ''
       a.innerText = item.title || item.raw
       a.title = item.raw
       a.className = NAME + '-link'
@@ -1477,7 +1528,7 @@
   }
 
   /**
-   * Bing Maps
+   * Bing Mapі DISABLED
    * @link https://docs.microsoft.com/en-us/bingmaps/rest-services/locations/find-a-location-by-point
    * http://dev.virtualearth.net/REST/v1/Locations/50.03539,36.34732?o=xml&key=AuBfUY8Y1Nzf3sRgceOYxaIg7obOSaqvs0k5dhXWfZyFpT9ArotYNRK7DQ_qZqZw&c=uk
    * http://dev.virtualearth.net/REST/v1/Locations/50.03539,36.34732?o=xml&key=AuBfUY8Y1Nzf3sRgceOYxaIg7obOSaqvs0k5dhXWfZyFpT9ArotYNRK7DQ_qZqZw&c=uk&includeEntityTypes=Address
@@ -1592,8 +1643,49 @@
         city,
         street,
         number,
-        res.name
+        res.name,
+        res.reference
       )
+    }
+  }
+
+  class GooglePlace {
+    /**
+     * Get Single Item by Reference/PlaceID
+     */
+    async requestByReference(reference) {
+      let result = null
+      let response = await this.makeDetailsRequest(reference)
+        .catch(e => console.error('GooglePlace', 'details error', e))
+    }
+
+    /**
+     * Details about a specific object or entity.
+     *
+     * This variable is used to encapsulate information or attributes
+     * related to a particular subject. The structure and type of the
+     * details may vary depending on the specific application or use-case.
+     */
+    async makeDetailsRequest(reference) {
+      // We need a map instance to initialize the service (even a dummy one)
+      let map = new google.maps.Map(document.createElement('div'))
+      let service = new google.maps.places.PlacesService(map)
+
+      let request = {
+        placeId: reference, // Google now uses placeId instead of reference
+        // Specifying fields is cheaper and faster
+        fields: ['name', 'geometry', 'vicinity', 'place_id']
+      }
+
+      return new Promise((resolve, reject) => {
+        service.getDetails(request, (place, status) => {
+          if (status === google.maps.places.PlacesServiceStatus.OK) {
+            resolve(place)
+          } else {
+            reject(status)
+          }
+        })
+      })
     }
   }
 
@@ -1602,6 +1694,8 @@
     .on('click', '.' + NAME + '-link', applyData)
     .on('mouseenter', '.' + NAME + '-link', showLayer)
     .on('mouseleave', '.' + NAME + '-link', hideLayer)
+    .on('mouseenter', '.' + NAME + '-external', showLayer)
+    .on('mouseleave', '.' + NAME + '-external', hideLayer)
     .on('none.wme', hideLayer)
 
   /**
@@ -1708,6 +1802,8 @@
     // Get the list of all available cities
     let cities = E50Instance.wmeSDK.DataModel.Cities.getAll()
       .filter(city => city.name)
+
+    console.log("Total found " + cities.length + " cities.")
 
     // More than one city, use city with best matching score
     // Remove text in the "()"; Waze puts the region name to the pair brackets
