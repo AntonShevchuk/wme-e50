@@ -2,7 +2,7 @@
 // @name         WME E50 Fetch POI Data
 // @name:uk      WME 🇺🇦 E50 Fetch POI Data
 // @name:ru      WME 🇺🇦 E50 Fetch POI Data
-// @version      0.12.3
+// @version      0.12.4
 // @description  Fetch information about the POI from external sources
 // @description:uk Скрипт дозволяє отримувати інформацію про POI зі сторонніх ресурсів
 // @description:ru Скрипт для получения информации о POI с внешних ресурсов
@@ -295,6 +295,9 @@
 
     '.distance-over-200 { background-color: #f08a24; }' +
     '.distance-over-1000 { background-color: #ed503b; }' +
+    '.external-operational a.url { border: 4px solid #009900FF; border-radius: 50% }' +
+    '.external-closed-temporarily a.url { border: 4px solid #eee; border-radius: 50%  }' +
+    '.external-closed-permanently a.url { border: 4px solid #f00; border-radius: 50%  }' +
 
     'p.e50-info { border-top: 1px solid #ccc; color: #777; font-size: x-small; margin-top: 15px; padding-top: 10px; text-align: center; }' +
     '#sidebar p.e50-blue { background-color:#0057B8;color:white;height:32px;text-align:center;line-height:32px;font-size:24px;margin:0; }' +
@@ -515,7 +518,7 @@
     showLayer () {
       this.wmeSDK.Map.setLayerVisibility({ layerName: this.name, visibility: true });
     }
-    
+
     /**
      * Hide the Layer
      */
@@ -648,15 +651,13 @@
 
       if (this.settings.get('options', 'externalProvider')) {
         if (model.externalProviderIds?.length) {
-          let Place = new GooglePlace
-
           let items = element.querySelectorAll('.external-providers-control .external-provider')
 
           for (let i = 0; i < model.externalProviderIds.length; i++) {
             let externalProviderId = model.externalProviderIds[i]
             let item = items[i]
 
-            Place
+            GoogleProvider
               .makeDetailsRequest(externalProviderId)
               .then(details => {
                 let extLat = details.geometry.location.lat()
@@ -673,6 +674,16 @@
                 item.dataset.distance = Math.round(distance)
                 item.dataset.lat = extLat
                 item.dataset.lon = extLng
+
+                if (details.business_status === 'OPERATIONAL') {
+                  item.classList.add('external-operational')
+                } else if (details.business_status === 'CLOSED_TEMPORARILY') {
+                  item.classList.add('external-closed-temporarily')
+                } else if (details.business_status === 'CLOSED_PERMANENTLY') {
+                  item.classList.add('external-closed-permanently')
+                }
+
+                console.log(details.business_status)
 
                 item.classList.add(this.name + '-external')
 
@@ -720,7 +731,7 @@
     }
 
     /**
-     * Apply data to the current selected POI
+     * Apply data to the current selected place
      * @param {Object} data
      */
     applyData (data) {
@@ -1647,17 +1658,6 @@
         res.reference
       )
     }
-  }
-
-  class GooglePlace {
-    /**
-     * Get Single Item by Reference/PlaceID
-     */
-    async requestByReference(reference) {
-      let result = null
-      let response = await this.makeDetailsRequest(reference)
-        .catch(e => console.error('GooglePlace', 'details error', e))
-    }
 
     /**
      * Details about a specific object or entity.
@@ -1666,7 +1666,7 @@
      * related to a particular subject. The structure and type of the
      * details may vary depending on the specific application or use-case.
      */
-    async makeDetailsRequest(reference) {
+    static async makeDetailsRequest(reference) {
       // We need a map instance to initialize the service (even a dummy one)
       let map = new google.maps.Map(document.createElement('div'))
       let service = new google.maps.places.PlacesService(map)
@@ -1674,7 +1674,7 @@
       let request = {
         placeId: reference, // Google now uses placeId instead of reference
         // Specifying fields is cheaper and faster
-        fields: ['name', 'geometry', 'vicinity', 'place_id']
+        fields: ['business_status', 'geometry', 'name', 'place_id', 'vicinity']
       }
 
       return new Promise((resolve, reject) => {
