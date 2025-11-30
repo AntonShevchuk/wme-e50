@@ -295,9 +295,9 @@
 
     '.distance-over-200 { background-color: #f08a24; }' +
     '.distance-over-1000 { background-color: #ed503b; }' +
-    '.external-operational a.url { border: 4px solid #009900FF; border-radius: 50% }' +
-    '.external-closed-temporarily a.url { border: 4px solid #eee; border-radius: 50%  }' +
-    '.external-closed-permanently a.url { border: 4px solid #f00; border-radius: 50%  }' +
+    '.external-operational a.url { border: 4px solid #009900; border-radius: 50% }' +
+    '.external-closed-temporarily a.url { border: 4px solid #ff7300; border-radius: 50%  }' +
+    '.external-closed-permanently a.url { border: 4px solid #ff0000; border-radius: 50%  }' +
 
     'p.e50-info { border-top: 1px solid #ccc; color: #777; font-size: x-small; margin-top: 15px; padding-top: 10px; text-align: center; }' +
     '#sidebar p.e50-blue { background-color:#0057B8;color:white;height:32px;text-align:center;line-height:32px;font-size:24px;margin:0; }' +
@@ -682,8 +682,6 @@
                 } else if (details.business_status === 'CLOSED_PERMANENTLY') {
                   item.classList.add('external-closed-permanently')
                 }
-
-                console.log(details.business_status)
 
                 item.classList.add(this.name + '-external')
 
@@ -1130,7 +1128,7 @@
       }
 
       let [cityId, cityName] = detectCity(city)
-      let [streetId, streetName] = detectStreet(street)
+      let [streetId, streetName] = detectStreet(cityId, street)
 
       if (!cityId && streetId) {
         let streetModel = E50Instance.wmeSDK.DataModel.Streets.getById( { streetId: streetId } )
@@ -1872,10 +1870,11 @@
   /**
    * Search the street name from available in the editor area
    * Normalize the street name by UA rules
+   * @param  {Number} cityId
    * @param  {String} street
    * @return {[Number,String]}
    */
-  function detectStreet (street) {
+  function detectStreet (cityId, street) {
     // It can be empty
     if (street.trim() === '') {
       return [null, null]
@@ -1883,6 +1882,7 @@
 
     // Get all streets
     let streets = E50Instance.wmeSDK.DataModel.Streets.getAll()
+      .filter(street => street.cityId === cityId)
       .filter(street => street.name)
 
     // Get type and create RegExp for filter streets
@@ -1892,7 +1892,7 @@
 
     // Detect type(s)
     if (matches.length === 0) {
-      types.push('вул.') // setup basic type
+      types.push('вул.') // set up a basic type
       street = 'вул. ' + street
     } else {
       types = matches.map(match => match[0].toLowerCase())
@@ -1920,6 +1920,11 @@
    * @return {String}
    */
   function normalizeNumber (number) {
+    // invalid data as a number
+    if (number?.trim().length > 16) {
+      return ''
+    }
+
     // process "д."
     number = number.replace(/^д\. ?/i, '')
     // process "дом"
