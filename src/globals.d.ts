@@ -39,7 +39,8 @@ declare class Settings {
 }
 
 declare class SimpleCache {
-  constructor(name: string)
+  constructor(name?: string)
+  has(key: string): boolean
   get(key: string): any
   set(key: string, value: any): void
 }
@@ -53,6 +54,7 @@ declare const I18n: {
 }
 
 declare const turf: any
+declare const google: any
 
 declare const Container: any
 
