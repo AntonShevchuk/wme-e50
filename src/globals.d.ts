@@ -58,6 +58,13 @@ declare const google: any
 
 declare const Container: any
 
+declare const GM_info: any
+declare const GM: {
+  setClipboard(text: string): void
+  xmlHttpRequest(details: any): void
+}
+declare const $: any
+
 declare module '*.css' {
   const content: string
   export default content
