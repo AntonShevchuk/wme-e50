@@ -1264,7 +1264,7 @@
             let [lon, lat] = feature.geometry.coordinates;
             let providers = [];
             let country = this.wmeSDK.DataModel.Countries.getTopCountry()?.id || 232;
-            let settings = LOCALE[country];
+            let settings = LOCALE[country] || { country: 'en', language: 'en', locale: 'en_US' };
             this.group('\u{1F4CD}' + lon + ' ' + lat);
             let radius = this.settings.get('ranges', 'radius');
             if (this.settings.get('providers', 'magic')) {

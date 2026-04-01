@@ -239,7 +239,7 @@ export class E50 extends WMEBase {
 
     let country = this.wmeSDK.DataModel.Countries.getTopCountry()?.id || 232
 
-    let settings = LOCALE[country]
+    let settings = LOCALE[country] || { country: 'en', language: 'en', locale: 'en_US' }
 
     this.group(
       '\u{1F4CD}' + lon + ' ' + lat
