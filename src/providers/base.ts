@@ -45,10 +45,16 @@ export class Provider {
         method: 'GET',
         responseType: 'json',
         url: url,
-        onload: response => response && response.response && resolve(response.response) || reject(response),
-        onabort: response => reject(response),
-        onerror: response => reject(response),
-        ontimeout: response => reject(response),
+        onload: (response: any) => {
+          if (response && response.response) {
+            resolve(response.response)
+          } else {
+            reject(response)
+          }
+        },
+        onabort: () => reject('aborted'),
+        onerror: (response: any) => reject(response),
+        ontimeout: () => reject('timeout'),
       })
     })
   }
@@ -77,7 +83,7 @@ export class Provider {
       this.response = E50Cache.get(key)
     } else {
       console.log('E50 Cache miss for ' + key)
-      this.response = await this.request(lon, lat, radius).catch(e => console.error(this.uid, 'search return error', e))
+      this.response = await this.request(lon, lat, radius).catch(e => { console.error(this.uid, 'search return error', e); return [] })
       E50Cache.set(key, this.response)
     }
 
@@ -211,8 +217,8 @@ export class Provider {
 
     let legend = document.createElement('legend')
     legend.innerHTML = this.name + ' <span>' + this.response.length + '</span>'
-    legend.onclick = function () {
-      this.parentElement.classList.toggle("collapsed")
+    legend.onclick = function (this: HTMLElement) {
+      this.parentElement!.classList.toggle("collapsed")
       return false
     }
     fieldset.append(legend, list)
