@@ -5,8 +5,8 @@ import { TYPES } from '../types'
  * Based on the closest segment and city
  */
 export class MagicProvider extends Provider {
-  constructor(container: any, settings: any, wmeSDK: any) {
-    super(I18n.t('E50').providers.magic, container, settings, wmeSDK)
+  constructor(container: any, settings: any, scriptSettings: any, wmeSDK: any) {
+    super(I18n.t('E50').providers.magic, container, settings, scriptSettings, wmeSDK)
   }
 
   async request(lon: number, lat: number, radius: number): Promise<any[]> {

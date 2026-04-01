@@ -248,7 +248,7 @@ export class E50 extends WMEBase {
     let radius = this.settings.get('ranges', 'radius')
 
     if (this.settings.get('providers', 'magic')) {
-      let Magic = new MagicProvider(container, settings, this.wmeSDK)
+      let Magic = new MagicProvider(container, settings, this.settings, this.wmeSDK)
       let providerPromise = Magic
         .search(lon, lat, radius)
         .then(() => Magic.render())
@@ -257,7 +257,7 @@ export class E50 extends WMEBase {
     }
 
     if (this.settings.get('providers', 'ua')) {
-      let UaAddresses = new UaAddressesProvider(container, settings, this.wmeSDK, this.settings.get('keys', 'ua'))
+      let UaAddresses = new UaAddressesProvider(container, settings, this.settings, this.wmeSDK, this.settings.get('keys', 'ua'))
       let providerPromise = UaAddresses
         .search(lon, lat, radius)
         .then(() => UaAddresses.render())
@@ -266,7 +266,7 @@ export class E50 extends WMEBase {
     }
 
     if (this.settings.get('providers', 'osm')) {
-      let Osm = new OsmProvider(container, settings, this.wmeSDK)
+      let Osm = new OsmProvider(container, settings, this.settings, this.wmeSDK)
       let providerPromise = Osm
         .search(lon, lat, radius)
         .then(() => Osm.render())
@@ -275,7 +275,7 @@ export class E50 extends WMEBase {
     }
 
     if (this.settings.get('providers', 'visicom')) {
-      let Visicom = new VisicomProvider(container, settings, this.wmeSDK, this.settings.get('keys', 'visicom'))
+      let Visicom = new VisicomProvider(container, settings, this.settings, this.wmeSDK, this.settings.get('keys', 'visicom'))
       let providerPromise = Visicom
         .search(lon, lat, radius)
         .then(() => Visicom.render())
@@ -284,7 +284,7 @@ export class E50 extends WMEBase {
     }
 
     if (this.settings.get('providers', 'here')) {
-      let Here = new HereProvider(container, settings, this.wmeSDK, this.settings.get('keys', 'here'))
+      let Here = new HereProvider(container, settings, this.settings, this.wmeSDK, this.settings.get('keys', 'here'))
       let providerPromise = Here
         .search(lon, lat, radius)
         .then(() => Here.render())
@@ -293,7 +293,7 @@ export class E50 extends WMEBase {
     }
 
     if (this.settings.get('providers', 'bing')) {
-      let Bing = new BingProvider(container, settings, this.wmeSDK, this.settings.get('keys', 'bing'))
+      let Bing = new BingProvider(container, settings, this.settings, this.wmeSDK, this.settings.get('keys', 'bing'))
       let providerPromise = Bing
         .search(lon, lat, radius)
         .then(() => Bing.render())
@@ -302,7 +302,7 @@ export class E50 extends WMEBase {
     }
 
     if (this.settings.get('providers', 'google')) {
-      let Google = new GoogleProvider(container, settings, this.wmeSDK, this.settings.get('keys', 'google'))
+      let Google = new GoogleProvider(container, settings, this.settings, this.wmeSDK, this.settings.get('keys', 'google'))
       let providerPromise = Google
         .search(lon, lat, radius)
         .then(() => Google.render())

@@ -10,15 +10,17 @@ export class Provider {
   name: string
   container: any
   settings: any
+  scriptSettings: any
   wmeSDK: any
   response: any[]
   panel: HTMLElement
 
-  constructor(uid: string, container: any, settings: any, wmeSDK: any) {
+  constructor(uid: string, container: any, settings: any, scriptSettings: any, wmeSDK: any) {
     this.uid = uid.trim().toLowerCase().replace(/\s/g, '-')
     this.name = uid
     this.response = []
     this.settings = settings
+    this.scriptSettings = scriptSettings
     this.wmeSDK = wmeSDK
     // prepare DOM
     this.panel = this._panel()
@@ -201,7 +203,7 @@ export class Provider {
     let fieldset = document.createElement('fieldset')
     let list = document.createElement('ul')
 
-    let collapse = parseInt(this.settings.get('ranges', 'collapse'))
+    let collapse = parseInt(this.scriptSettings.get('ranges', 'collapse'))
 
     if (collapse && this.response.length > collapse) {
       fieldset.className = 'collapsed'

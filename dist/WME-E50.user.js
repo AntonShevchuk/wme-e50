@@ -515,11 +515,12 @@
     let E50Cache;
     function setCache(cache) { E50Cache = cache; }
     class Provider {
-        constructor(uid, container, settings, wmeSDK) {
+        constructor(uid, container, settings, scriptSettings, wmeSDK) {
             this.uid = uid.trim().toLowerCase().replace(/\s/g, '-');
             this.name = uid;
             this.response = [];
             this.settings = settings;
+            this.scriptSettings = scriptSettings;
             this.wmeSDK = wmeSDK;
             // prepare DOM
             this.panel = this._panel();
@@ -683,7 +684,7 @@
         _fieldset() {
             let fieldset = document.createElement('fieldset');
             let list = document.createElement('ul');
-            let collapse = parseInt(this.settings.get('ranges', 'collapse'));
+            let collapse = parseInt(this.scriptSettings.get('ranges', 'collapse'));
             if (collapse && this.response.length > collapse) {
                 fieldset.className = 'collapsed';
             }
@@ -739,8 +740,8 @@
      * Based on the closest segment and city
      */
     class MagicProvider extends Provider {
-        constructor(container, settings, wmeSDK) {
-            super(I18n.t('E50').providers.magic, container, settings, wmeSDK);
+        constructor(container, settings, scriptSettings, wmeSDK) {
+            super(I18n.t('E50').providers.magic, container, settings, scriptSettings, wmeSDK);
         }
         async request(lon, lat, radius) {
             let segments = this.wmeSDK.DataModel.Segments.getAll();
@@ -800,8 +801,8 @@
      * UA Addresses
      */
     class UaAddressesProvider extends Provider {
-        constructor(container, settings, wmeSDK, key) {
-            super(I18n.t('E50').providers.ua, container, settings, wmeSDK);
+        constructor(container, settings, scriptSettings, wmeSDK, key) {
+            super(I18n.t('E50').providers.ua, container, settings, scriptSettings, wmeSDK);
             this.key = key;
         }
         async request(lon, lat, radius) {
@@ -845,8 +846,8 @@
      * visicom.ua
      */
     class VisicomProvider extends Provider {
-        constructor(container, settings, wmeSDK, key) {
-            super(I18n.t('E50').providers.visicom, container, settings, wmeSDK);
+        constructor(container, settings, scriptSettings, wmeSDK, key) {
+            super(I18n.t('E50').providers.visicom, container, settings, scriptSettings, wmeSDK);
             this.key = key;
         }
         async request(lon, lat, radius) {
@@ -895,8 +896,8 @@
      * OpenStreetMap
      */
     class OsmProvider extends Provider {
-        constructor(container, settings, wmeSDK) {
-            super(I18n.t('E50').providers.osm, container, settings, wmeSDK);
+        constructor(container, settings, scriptSettings, wmeSDK) {
+            super(I18n.t('E50').providers.osm, container, settings, scriptSettings, wmeSDK);
         }
         async request(lon, lat, radius) {
             let result = [];
@@ -947,8 +948,8 @@
      * @link https://www.here.com/docs/bundle/geocoder-api-developer-guide/page/topics/resource-reverse-geocode.html
      */
     class HereProvider extends Provider {
-        constructor(container, settings, wmeSDK, key) {
-            super(I18n.t('E50').providers.here, container, settings, wmeSDK);
+        constructor(container, settings, scriptSettings, wmeSDK, key) {
+            super(I18n.t('E50').providers.here, container, settings, scriptSettings, wmeSDK);
             this.key = key;
         }
         async request(lon, lat, radius) {
@@ -984,8 +985,8 @@
      * http://dev.virtualearth.net/REST/v1/Locations/50.03539,36.34732?o=xml&key=AuBfUY8Y1Nzf3sRgceOYxaIg7obOSaqvs0k5dhXWfZyFpT9ArotYNRK7DQ_qZqZw&c=uk&includeEntityTypes=Address
      */
     class BingProvider extends Provider {
-        constructor(container, settings, wmeSDK, key) {
-            super(I18n.t('E50').providers.bing, container, settings, wmeSDK);
+        constructor(container, settings, scriptSettings, wmeSDK, key) {
+            super(I18n.t('E50').providers.bing, container, settings, scriptSettings, wmeSDK);
             this.key = key;
         }
         async request(lon, lat, radius) {
@@ -1018,8 +1019,8 @@
      * @link https://developers.google.com/places/web-service/search
      */
     class GoogleProvider extends Provider {
-        constructor(container, settings, wmeSDK, key) {
-            super(I18n.t('E50').providers.google, container, settings, wmeSDK);
+        constructor(container, settings, scriptSettings, wmeSDK, key) {
+            super(I18n.t('E50').providers.google, container, settings, scriptSettings, wmeSDK);
             this.key = key;
         }
         async request(lon, lat, radius) {
@@ -1268,7 +1269,7 @@
             this.group('\u{1F4CD}' + lon + ' ' + lat);
             let radius = this.settings.get('ranges', 'radius');
             if (this.settings.get('providers', 'magic')) {
-                let Magic = new MagicProvider(container, settings, this.wmeSDK);
+                let Magic = new MagicProvider(container, settings, this.settings, this.wmeSDK);
                 let providerPromise = Magic
                     .search(lon, lat, radius)
                     .then(() => Magic.render())
@@ -1276,7 +1277,7 @@
                 providers.push(providerPromise);
             }
             if (this.settings.get('providers', 'ua')) {
-                let UaAddresses = new UaAddressesProvider(container, settings, this.wmeSDK, this.settings.get('keys', 'ua'));
+                let UaAddresses = new UaAddressesProvider(container, settings, this.settings, this.wmeSDK, this.settings.get('keys', 'ua'));
                 let providerPromise = UaAddresses
                     .search(lon, lat, radius)
                     .then(() => UaAddresses.render())
@@ -1284,7 +1285,7 @@
                 providers.push(providerPromise);
             }
             if (this.settings.get('providers', 'osm')) {
-                let Osm = new OsmProvider(container, settings, this.wmeSDK);
+                let Osm = new OsmProvider(container, settings, this.settings, this.wmeSDK);
                 let providerPromise = Osm
                     .search(lon, lat, radius)
                     .then(() => Osm.render())
@@ -1292,7 +1293,7 @@
                 providers.push(providerPromise);
             }
             if (this.settings.get('providers', 'visicom')) {
-                let Visicom = new VisicomProvider(container, settings, this.wmeSDK, this.settings.get('keys', 'visicom'));
+                let Visicom = new VisicomProvider(container, settings, this.settings, this.wmeSDK, this.settings.get('keys', 'visicom'));
                 let providerPromise = Visicom
                     .search(lon, lat, radius)
                     .then(() => Visicom.render())
@@ -1300,7 +1301,7 @@
                 providers.push(providerPromise);
             }
             if (this.settings.get('providers', 'here')) {
-                let Here = new HereProvider(container, settings, this.wmeSDK, this.settings.get('keys', 'here'));
+                let Here = new HereProvider(container, settings, this.settings, this.wmeSDK, this.settings.get('keys', 'here'));
                 let providerPromise = Here
                     .search(lon, lat, radius)
                     .then(() => Here.render())
@@ -1308,7 +1309,7 @@
                 providers.push(providerPromise);
             }
             if (this.settings.get('providers', 'bing')) {
-                let Bing = new BingProvider(container, settings, this.wmeSDK, this.settings.get('keys', 'bing'));
+                let Bing = new BingProvider(container, settings, this.settings, this.wmeSDK, this.settings.get('keys', 'bing'));
                 let providerPromise = Bing
                     .search(lon, lat, radius)
                     .then(() => Bing.render())
@@ -1316,7 +1317,7 @@
                 providers.push(providerPromise);
             }
             if (this.settings.get('providers', 'google')) {
-                let Google = new GoogleProvider(container, settings, this.wmeSDK, this.settings.get('keys', 'google'));
+                let Google = new GoogleProvider(container, settings, this.settings, this.wmeSDK, this.settings.get('keys', 'google'));
                 let providerPromise = Google
                     .search(lon, lat, radius)
                     .then(() => Google.render())

@@ -7,8 +7,8 @@ import { Provider } from './base'
 export class GoogleProvider extends Provider {
   key: string
 
-  constructor(container: any, settings: any, wmeSDK: any, key: string) {
-    super(I18n.t('E50').providers.google, container, settings, wmeSDK)
+  constructor(container: any, settings: any, scriptSettings: any, wmeSDK: any, key: string) {
+    super(I18n.t('E50').providers.google, container, settings, scriptSettings, wmeSDK)
     this.key = key
   }
 
