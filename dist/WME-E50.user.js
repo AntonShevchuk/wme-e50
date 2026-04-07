@@ -1154,7 +1154,7 @@
             }
             fsProviders.addCheckboxes(providerCheckboxes);
             tab.addElement(fsProviders);
-            // Setup providers key's
+            // Setup provider's keys
             /** @type {WMEUIHelperFieldset} */
             let fsKeys = this.helper.createFieldset(I18n.t(this.name).options.keys);
             let keys = this.settings.get('keys');
