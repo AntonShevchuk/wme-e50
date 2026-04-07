@@ -1120,11 +1120,17 @@
             /** @type {WMEUIHelperFieldset} */
             let fsOptions = this.helper.createFieldset(I18n.t(this.name).options.title);
             let options = this.settings.get('options');
+            let checkboxes = {};
             for (let item in options) {
                 if (options.hasOwnProperty(item)) {
-                    fsOptions.addCheckbox(item, I18n.t(this.name).options[item], (event) => this.settings.set(['options', item], event.target.checked), this.settings.get('options', item));
+                    checkboxes[item] = {
+                        title: I18n.t(this.name).options[item],
+                        callback: (event) => this.settings.set(['options', item], event.target.checked),
+                        checked: this.settings.get('options', item),
+                    };
                 }
             }
+            fsOptions.addCheckboxes(checkboxes);
             tab.addElement(fsOptions);
             // Setup ranges
             /** @type {WMEUIHelperFieldset} */
@@ -1140,11 +1146,17 @@
             /** @type {WMEUIHelperFieldset} */
             let fsProviders = this.helper.createFieldset(I18n.t(this.name).providers.title);
             let providers = this.settings.get('providers');
+            let providerCheckboxes = {};
             for (let item in providers) {
                 if (providers.hasOwnProperty(item) && SETTINGS.providers.hasOwnProperty(item)) {
-                    fsProviders.addCheckbox(item, I18n.t(this.name).providers[item], (event) => this.settings.set(['providers', item], event.target.checked), this.settings.get('providers', item));
+                    providerCheckboxes[item] = {
+                        title: I18n.t(this.name).providers[item],
+                        callback: (event) => this.settings.set(['providers', item], event.target.checked),
+                        checked: this.settings.get('providers', item),
+                    };
                 }
             }
+            fsProviders.addCheckboxes(providerCheckboxes);
             tab.addElement(fsProviders);
             // Setup providers key's
             /** @type {WMEUIHelperFieldset} */
