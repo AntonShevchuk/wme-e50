@@ -11,26 +11,20 @@ import { BingProvider } from './providers/bing'
 import { GoogleProvider } from './providers/google'
 
 export class E50 extends WMEBase {
-  helper: any
   modal: any
   panel: any
 
   constructor (name: string, settings: any) {
     super(name, settings)
-    this.initHelper()
     this.initTab()
     this.initLayer()
   }
 
-  initHelper () {
-    this.helper = new WMEUIHelper(this.name)
-
+  initTab () {
     this.modal = this.helper.createModal(I18n.t(this.name).title)
 
     this.panel = this.helper.createPanel(I18n.t(this.name).title)
-  }
 
-  initTab () {
     let tab = this.helper.createTab(
       I18n.t(this.name).title,
       {
@@ -406,7 +400,7 @@ export class E50 extends WMEBase {
   applyData (data: any) {
     let venue = this.getSelectedPOI()
 
-    if (!this.wmeSDK.DataModel.Venues.hasPermissions({ venueId: venue.id })) {
+    if (!this.canEditVenue(venue)) {
       this.log('You don\'t have permissions to edit this venue')
       return
     }

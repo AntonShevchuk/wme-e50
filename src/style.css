@@ -192,6 +192,10 @@
   border-radius: 50%;
 }
 
+.e50 .button-toolbar {
+  padding: 8px;
+}
+
 p.e50-info {
   border-top: 1px solid #ccc;
   color: #777;
