@@ -1,3 +1,4 @@
+import { NAME } from '../translations'
 import { Provider } from './base'
 
 /**
@@ -10,7 +11,7 @@ export class BingProvider extends Provider {
   key: string
 
   constructor(container: any, settings: any, scriptSettings: any, wmeSDK: any, key: string) {
-    super(I18n.t('E50').providers.bing, container, settings, scriptSettings, wmeSDK)
+    super(WMEUI.t(NAME).providers.bing, container, settings, scriptSettings, wmeSDK)
     this.key = key
   }
 

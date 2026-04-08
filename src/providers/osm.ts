@@ -1,3 +1,4 @@
+import { NAME } from '../translations'
 import { Provider } from './base'
 
 /**
@@ -5,7 +6,7 @@ import { Provider } from './base'
  */
 export class OsmProvider extends Provider {
   constructor(container: any, settings: any, scriptSettings: any, wmeSDK: any) {
-    super(I18n.t('E50').providers.osm, container, settings, scriptSettings, wmeSDK)
+    super(WMEUI.t(NAME).providers.osm, container, settings, scriptSettings, wmeSDK)
   }
 
   async request(lon: number, lat: number, radius: number): Promise<any[]> {

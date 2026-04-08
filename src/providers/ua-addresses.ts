@@ -1,3 +1,4 @@
+import { NAME } from '../translations'
 import { Provider } from './base'
 
 /**
@@ -7,7 +8,7 @@ export class UaAddressesProvider extends Provider {
   key: string
 
   constructor(container: any, settings: any, scriptSettings: any, wmeSDK: any, key: string) {
-    super(I18n.t('E50').providers.ua, container, settings, scriptSettings, wmeSDK)
+    super(WMEUI.t(NAME).providers.ua, container, settings, scriptSettings, wmeSDK)
     this.key = key
   }
 

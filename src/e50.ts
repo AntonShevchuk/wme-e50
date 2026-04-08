@@ -21,12 +21,12 @@ export class E50 extends WMEBase {
   }
 
   initTab () {
-    this.modal = this.helper.createModal(I18n.t(this.name).title)
+    this.modal = this.helper.createModal(WMEUI.t(NAME).title)
 
-    this.panel = this.helper.createPanel(I18n.t(this.name).title)
+    this.panel = this.helper.createPanel(WMEUI.t(NAME).title)
 
     let tab = this.helper.createTab(
-      I18n.t(this.name).title,
+      WMEUI.t(NAME).title,
       {
         sidebar: this.wmeSDK.Sidebar,
         image: GM_info.script.icon
@@ -35,13 +35,13 @@ export class E50 extends WMEBase {
 
     // Setup options
     /** @type {WMEUIHelperFieldset} */
-    let fsOptions = this.helper.createFieldset(I18n.t(this.name).options.title)
+    let fsOptions = this.helper.createFieldset(WMEUI.t(NAME).options.title)
     let options = this.settings.get('options')
     let checkboxes: Record<string, any> = {}
     for (let item in options) {
       if (options.hasOwnProperty(item)) {
         checkboxes[item] = {
-          title: I18n.t(this.name).options[item],
+          title: WMEUI.t(NAME).options[item],
           callback: (event: any) => this.settings.set(['options', item], event.target.checked),
           checked: this.settings.get('options', item),
         }
@@ -52,13 +52,13 @@ export class E50 extends WMEBase {
 
     // Setup ranges
     /** @type {WMEUIHelperFieldset} */
-    let fsRanges = this.helper.createFieldset(I18n.t(this.name).ranges.title)
+    let fsRanges = this.helper.createFieldset(WMEUI.t(NAME).ranges.title)
     let ranges = this.settings.get('ranges')
     for (let item in ranges) {
       if (ranges.hasOwnProperty(item)) {
         fsRanges.addNumber(
           'settings-ranges-' + item,
-          I18n.t(NAME).ranges[item],
+          WMEUI.t(NAME).ranges[item],
           (event: any) => this.settings.set(['ranges', item], event.target.value),
           this.settings.get('ranges', item),
           (item === 'radius') ? 100 : 0,
@@ -71,13 +71,13 @@ export class E50 extends WMEBase {
 
     // Setup providers settings
     /** @type {WMEUIHelperFieldset} */
-    let fsProviders = this.helper.createFieldset(I18n.t(this.name).providers.title)
+    let fsProviders = this.helper.createFieldset(WMEUI.t(NAME).providers.title)
     let providers = this.settings.get('providers')
     let providerCheckboxes: Record<string, any> = {}
     for (let item in providers) {
       if (providers.hasOwnProperty(item) && SETTINGS.providers.hasOwnProperty(item)) {
         providerCheckboxes[item] = {
-          title: I18n.t(this.name).providers[item],
+          title: WMEUI.t(NAME).providers[item],
           callback: (event: any) => this.settings.set(['providers', item], event.target.checked),
           checked: this.settings.get('providers', item),
         }
@@ -86,15 +86,15 @@ export class E50 extends WMEBase {
     fsProviders.addCheckboxes(providerCheckboxes)
     tab.addElement(fsProviders)
 
-    // Setup providers key's
+    // Setup provider's keys
     /** @type {WMEUIHelperFieldset} */
-    let fsKeys = this.helper.createFieldset(I18n.t(this.name).options.keys)
+    let fsKeys = this.helper.createFieldset(WMEUI.t(NAME).options.keys)
     let keys = this.settings.get('keys')
     for (let item in keys) {
       if (keys.hasOwnProperty(item) && SETTINGS.keys.hasOwnProperty(item)) {
         fsKeys.addInput(
           'key-' + item,
-          I18n.t(this.name).providers[item],
+          WMEUI.t(NAME).providers[item],
           (event: any) => this.settings.set(['keys', item], event.target.value),
           this.settings.get('keys', item)
         )
@@ -436,7 +436,7 @@ export class E50 extends WMEBase {
       this.log('The Venue has a Name \u00AB' + venue.name + '\u00BB' )
       if (name && name !== venue.name) {
         this.log('Replace a Venue Name with a new one?' )
-        if (window.confirm(I18n.t(NAME).questions.changeName + '\n\u00AB' + venue.name + '\u00BB \u27F6 \u00AB' + name + '\u00BB?')) {
+        if (window.confirm(WMEUI.t(NAME).questions.changeName + '\n\u00AB' + venue.name + '\u00BB \u27F6 \u00AB' + name + '\u00BB?')) {
           newName = name
           this.log(' \u2014 Yes, a new Venue Name is \u00AB' + newName + '\u00BB' )
         } else {
@@ -445,7 +445,7 @@ export class E50 extends WMEBase {
         }
       } else if (number && number !== venue.name) {
         this.log('Replace the Venue Name with a number?' )
-        if (window.confirm(I18n.t(NAME).questions.changeName + '\n\u00AB' + venue.name + '\u00BB \u27F6 \u00AB' + number + '\u00BB?')) {
+        if (window.confirm(WMEUI.t(NAME).questions.changeName + '\n\u00AB' + venue.name + '\u00BB \u27F6 \u00AB' + number + '\u00BB?')) {
           newName = number
           this.log(' \u2014 Yes, a new Venue Name is \u00AB' + newName + '\u00BB' )
         } else {
@@ -486,7 +486,7 @@ export class E50 extends WMEBase {
     if (!cityId && cityName) {
       this.log('We don\'t find a City with name \u00AB' + cityName + '\u00BB, create a new one?' )
       // Ask to create a new City
-      if (window.confirm(I18n.t(NAME).questions.notFoundCity + '\n\u00AB' + cityName + '\u00BB?')) {
+      if (window.confirm(WMEUI.t(NAME).questions.notFoundCity + '\n\u00AB' + cityName + '\u00BB?')) {
         cityId = this.getCity(cityName).id
         this.log(' \u2014 Yes, create new City \u00AB' + cityName + '\u00BB' )
       } else {
@@ -507,7 +507,7 @@ export class E50 extends WMEBase {
       && streetId !== address.street.id
       && '' !== address.street.name) {
       this.log('Replace the Street with a new one?')
-      if (window.confirm(I18n.t(NAME).questions.changeStreet + '\n\u00AB' + address.street.name + '\u00BB \u27F6 \u00AB' + streetName + '\u00BB?')) {
+      if (window.confirm(WMEUI.t(NAME).questions.changeStreet + '\n\u00AB' + address.street.name + '\u00BB \u27F6 \u00AB' + streetName + '\u00BB?')) {
         newStreetId = streetId
         this.log(' \u2014 Yes, use a new Street Name \u00AB' + streetName + '\u00BB')
       } else {
@@ -521,7 +521,7 @@ export class E50 extends WMEBase {
       if (streetName) {
         this.log('We don\'t find the street \u00AB' + streetName + '\u00BB')
         this.log('Create a new Street?')
-        if (window.confirm(I18n.t(NAME).questions.notFoundStreet + '\n\u00AB' + streetName + '\u00BB?')) {
+        if (window.confirm(WMEUI.t(NAME).questions.notFoundStreet + '\n\u00AB' + streetName + '\u00BB?')) {
           street = this.getStreet(city.id, streetName)
           this.log(' \u2014 Yes, create a new Street \u00AB' + streetName + '\u00BB')
         } else if ('' !== address.street?.name) {
@@ -539,7 +539,7 @@ export class E50 extends WMEBase {
 
       if (street.id !== address.street?.id && '' !== address.street?.name) {
         this.log('Replace the Street with new one?')
-        if (window.confirm(I18n.t(NAME).questions.changeStreet + '\n\u00AB' + address.street.name + '\u00BB \u27F6 \u00AB' + streetName + '\u00BB?')) {
+        if (window.confirm(WMEUI.t(NAME).questions.changeStreet + '\n\u00AB' + address.street.name + '\u00BB \u27F6 \u00AB' + streetName + '\u00BB?')) {
           newStreetId = street.id
           this.log(' \u2014 Yes, use a new Street Name \u00AB' + streetName + '\u00BB')
         } else {
@@ -565,7 +565,7 @@ export class E50 extends WMEBase {
       if (address.houseNumber) {
         this.log('Replace the House Number with a new one?')
         if (address.houseNumber !== number &&
-          window.confirm(I18n.t(NAME).questions.changeNumber + '\n\u00AB' + address.houseNumber + '\u00BB \u27F6 \u00AB' + number + '\u00BB?')) {
+          window.confirm(WMEUI.t(NAME).questions.changeNumber + '\n\u00AB' + address.houseNumber + '\u00BB \u27F6 \u00AB' + number + '\u00BB?')) {
           newHouseNumber = number
           this.log(' \u2014 Yes, use a new House Number \u00AB' + number + '\u00BB')
         } else {

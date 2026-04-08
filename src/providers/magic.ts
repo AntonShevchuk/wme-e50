@@ -1,3 +1,4 @@
+import { NAME } from '../translations'
 import { Provider } from './base'
 import { TYPES } from '../types'
 
@@ -6,7 +7,7 @@ import { TYPES } from '../types'
  */
 export class MagicProvider extends Provider {
   constructor(container: any, settings: any, scriptSettings: any, wmeSDK: any) {
-    super(I18n.t('E50').providers.magic, container, settings, scriptSettings, wmeSDK)
+    super(WMEUI.t(NAME).providers.magic, container, settings, scriptSettings, wmeSDK)
   }
 
   async request(lon: number, lat: number, radius: number): Promise<any[]> {
