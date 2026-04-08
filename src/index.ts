@@ -5,11 +5,11 @@ import { setE50Instance, applyData, showLayer, hideLayer } from './helpers'
 import { setCache } from './providers/base'
 import css from './style.css'
 
-WMEUI.addTranslation(NAME, TRANSLATION)
-WMEUI.addStyle(css)
-
 $(document)
   .on('bootstrap.wme', () => {
+    WMEUI.addTranslation(NAME, TRANSLATION)
+    WMEUI.addStyle(css)
+
     let scriptSettings = new Settings(NAME, SETTINGS)
     let instance = new E50(NAME, scriptSettings)
     setE50Instance(instance)
