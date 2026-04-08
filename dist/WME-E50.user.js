@@ -22,10 +22,10 @@
 // @connect      stat.waze.com.ua
 // @grant        GM.xmlHttpRequest
 // @grant        GM.setClipboard
-// @require      https://update.greasyfork.org/scripts/389765/1785927/CommonUtils.js
-// @require      https://update.greasyfork.org/scripts/450160/1785943/WME-Bootstrap.js
-// @require      https://update.greasyfork.org/scripts/450221/1785960/WME-Base.js
-// @require      https://update.greasyfork.org/scripts/450320/1785964/WME-UI.js
+// @require      https://update.greasyfork.org/scripts/389765/1793258/CommonUtils.js
+// @require      https://update.greasyfork.org/scripts/450160/1792042/WME-Bootstrap.js
+// @require      https://update.greasyfork.org/scripts/450221/1793261/WME-Base.js
+// @require      https://update.greasyfork.org/scripts/450320/1793862/WME-UI.js
 // @require      https://cdn.jsdelivr.net/npm/@turf/turf@7.2.0/turf.min.js
 // ==/UserScript==
 
