@@ -1121,7 +1121,7 @@
                 if (options.hasOwnProperty(item)) {
                     checkboxes[item] = {
                         title: WMEUI.t(NAME).options[item],
-                        callback: (event) => this.settings.set(['options', item], event.target.checked),
+                        callback: (event) => this.settings.set('options', item, event.target.checked),
                         checked: this.settings.get('options', item),
                     };
                 }
@@ -1134,7 +1134,7 @@
             let ranges = this.settings.get('ranges');
             for (let item in ranges) {
                 if (ranges.hasOwnProperty(item)) {
-                    fsRanges.addNumber('settings-ranges-' + item, WMEUI.t(NAME).ranges[item], (event) => this.settings.set(['ranges', item], event.target.value), this.settings.get('ranges', item), (item === 'radius') ? 100 : 0, (item === 'radius') ? 1000 : 10, (item === 'radius') ? 50 : 1);
+                    fsRanges.addNumber('settings-ranges-' + item, WMEUI.t(NAME).ranges[item], (event) => this.settings.set('ranges', item, event.target.value), this.settings.get('ranges', item), (item === 'radius') ? 100 : 0, (item === 'radius') ? 1000 : 10, (item === 'radius') ? 50 : 1);
                 }
             }
             tab.addElement(fsRanges);
@@ -1147,7 +1147,7 @@
                 if (providers.hasOwnProperty(item) && SETTINGS.providers.hasOwnProperty(item)) {
                     providerCheckboxes[item] = {
                         title: WMEUI.t(NAME).providers[item],
-                        callback: (event) => this.settings.set(['providers', item], event.target.checked),
+                        callback: (event) => this.settings.set('providers', item, event.target.checked),
                         checked: this.settings.get('providers', item),
                     };
                 }
@@ -1160,7 +1160,7 @@
             let keys = this.settings.get('keys');
             for (let item in keys) {
                 if (keys.hasOwnProperty(item) && SETTINGS.keys.hasOwnProperty(item)) {
-                    fsKeys.addInput('key-' + item, WMEUI.t(NAME).providers[item], (event) => this.settings.set(['keys', item], event.target.value), this.settings.get('keys', item));
+                    fsKeys.addInput('key-' + item, WMEUI.t(NAME).providers[item], (event) => this.settings.set('keys', item, event.target.value), this.settings.get('keys', item));
                 }
             }
             tab.addElement(fsKeys);

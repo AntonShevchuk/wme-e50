@@ -42,7 +42,7 @@ export class E50 extends WMEBase {
       if (options.hasOwnProperty(item)) {
         checkboxes[item] = {
           title: WMEUI.t(NAME).options[item],
-          callback: (event: any) => this.settings.set(['options', item], event.target.checked),
+          callback: (event: any) => this.settings.set('options', item, event.target.checked),
           checked: this.settings.get('options', item),
         }
       }
@@ -59,7 +59,7 @@ export class E50 extends WMEBase {
         fsRanges.addNumber(
           'settings-ranges-' + item,
           WMEUI.t(NAME).ranges[item],
-          (event: any) => this.settings.set(['ranges', item], event.target.value),
+          (event: any) => this.settings.set('ranges', item, event.target.value),
           this.settings.get('ranges', item),
           (item === 'radius') ? 100 : 0,
           (item === 'radius') ? 1000 : 10,
@@ -78,7 +78,7 @@ export class E50 extends WMEBase {
       if (providers.hasOwnProperty(item) && SETTINGS.providers.hasOwnProperty(item)) {
         providerCheckboxes[item] = {
           title: WMEUI.t(NAME).providers[item],
-          callback: (event: any) => this.settings.set(['providers', item], event.target.checked),
+          callback: (event: any) => this.settings.set('providers', item, event.target.checked),
           checked: this.settings.get('providers', item),
         }
       }
@@ -95,7 +95,7 @@ export class E50 extends WMEBase {
         fsKeys.addInput(
           'key-' + item,
           WMEUI.t(NAME).providers[item],
-          (event: any) => this.settings.set(['keys', item], event.target.value),
+          (event: any) => this.settings.set('keys', item, event.target.value),
           this.settings.get('keys', item)
         )
       }
