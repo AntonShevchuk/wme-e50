@@ -1,9 +1,12 @@
 {
   "name": "wme-e50",
-  "version": "0.12.7",
+  "version": "0.13.0",
   "scripts": {
     "build": "rollup -c",
     "watch": "rollup -c --watch"
+  },
+  "optionalDependencies": {
+    "wme-sdk-typings": "https://web-assets.waze.com/wme_sdk_docs/production/latest/wme-sdk-typings.tgz"
   },
   "devDependencies": {
     "@rollup/plugin-typescript": "^12.3.0",

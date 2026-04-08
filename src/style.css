@@ -1,9 +1,9 @@
-.form-group.e50 .header h5 {
+.wme-ui-panel.e50 .header h5 {
   padding: 16px 16px 0;
   font-size: 16px;
 }
 
-.form-group.e50 .body {
+.wme-ui-panel.e50 .body {
   overflow-x: auto;
   max-height: 420px;
   padding: 4px 0;
@@ -119,7 +119,7 @@
   background: rgba(250, 200, 100, 1);
 }
 
-.form-group.e50 legend {
+.wme-ui-panel.e50 legend {
   cursor: pointer;
   font-size: 12px;
   font-weight: bold;
@@ -130,28 +130,28 @@
   padding: 0 8px;
 }
 
-.form-group.e50 fieldset {
+.wme-ui-panel.e50 fieldset {
   border: 1px solid #ddd;
   padding: 8px;
 }
 
-.form-group.e50 div.controls {
+.wme-ui-panel.e50 .wme-ui-fieldset-content {
   padding: 8px;
 }
 
-.form-group.e50 div.controls:empty,
+.wme-ui-panel.e50 .wme-ui-fieldset-content:empty,
 #panel-container .archive-panel .body:empty {
   min-height: 20px;
 }
 
-.form-group.e50 div.controls:empty::after,
+.wme-ui-panel.e50 .wme-ui-fieldset-content:empty::after,
 #panel-container .archive-panel .body:empty::after {
   color: #ccc;
   padding: 0 8px;
   content: "\2014";
 }
 
-.form-group.e50 div.controls label {
+.wme-ui-panel.e50 .wme-ui-fieldset-content label {
   white-space: normal;
   font-weight: normal;
   margin-top: 5px;
@@ -159,11 +159,11 @@
   font-size: 13px;
 }
 
-.form-group.e50 div.controls input[type="text"] {
+.wme-ui-panel.e50 .wme-ui-fieldset-content input[type="text"] {
   float: right;
 }
 
-.form-group.e50 div.controls input[type="number"] {
+.wme-ui-panel.e50 .wme-ui-fieldset-content input[type="number"] {
   float: right;
   width: 60px;
   text-align: right;
@@ -192,7 +192,7 @@
   border-radius: 50%;
 }
 
-.e50 .button-toolbar {
+.e50 .wme-ui-tab-content {
   padding: 8px;
 }
 

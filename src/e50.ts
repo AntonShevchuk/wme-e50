@@ -210,7 +210,7 @@ export class E50 extends WMEBase {
       container = parent.querySelector('.wme-ui-body')
     } else {
       parent = this.panel.html()
-      container = parent.querySelector('.controls')
+      container = parent.querySelector('.wme-ui-panel-content')
     }
 
     // Clear container
