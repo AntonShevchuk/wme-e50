@@ -86,7 +86,7 @@ export class E50 extends WMEBase {
     fsProviders.addCheckboxes(providerCheckboxes)
     tab.addElement(fsProviders)
 
-    // Setup provider's keys
+    // Set up provider's keys
     /** @type {WMEUIHelperFieldset} */
     let fsKeys = this.helper.createFieldset(WMEUI.t(NAME).options.keys)
     let keys = this.settings.get('keys')

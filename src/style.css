@@ -119,26 +119,6 @@
   background: rgba(250, 200, 100, 1);
 }
 
-.wme-ui-panel.e50 legend {
-  cursor: pointer;
-  font-size: 12px;
-  font-weight: bold;
-  width: auto;
-  text-align: right;
-  border: 0;
-  margin: 0;
-  padding: 0 8px;
-}
-
-.wme-ui-panel.e50 fieldset {
-  border: 1px solid #ddd;
-  padding: 8px;
-}
-
-.wme-ui-panel.e50 .wme-ui-fieldset-content {
-  padding: 8px;
-}
-
 .wme-ui-panel.e50 .wme-ui-fieldset-content:empty,
 #panel-container .archive-panel .body:empty {
   min-height: 20px;
@@ -152,21 +132,12 @@
 }
 
 .wme-ui-panel.e50 .wme-ui-fieldset-content label {
-  white-space: normal;
-  font-weight: normal;
   margin-top: 5px;
   line-height: 18px;
-  font-size: 13px;
 }
 
 .wme-ui-panel.e50 .wme-ui-fieldset-content input[type="text"] {
   float: right;
-}
-
-.wme-ui-panel.e50 .wme-ui-fieldset-content input[type="number"] {
-  float: right;
-  width: 60px;
-  text-align: right;
 }
 
 .distance-over-200 {
