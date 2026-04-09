@@ -1,9 +1,9 @@
-.wme-ui-panel.e50 .header h5 {
+.wme-ui-modal.e50 .wme-ui-modal-header h5 {
   padding: 16px 16px 0;
   font-size: 16px;
 }
 
-.wme-ui-panel.e50 .body {
+.wme-ui-modal.e50 .wme-ui-modal-content {
   overflow-x: auto;
   max-height: 420px;
   padding: 4px 0;
@@ -21,7 +21,8 @@
 }
 
 #venue-edit-general .e50 fieldset legend,
-.wme-ui-panel.e50 fieldset legend {
+.wme-ui-panel.e50 fieldset legend,
+.wme-ui-modal.e50 fieldset legend {
   cursor: pointer;
   font-size: 12px;
   font-weight: bold;
@@ -32,7 +33,8 @@
 }
 
 #venue-edit-general .e50 fieldset legend::after,
-.wme-ui-panel.e50 fieldset legend::after {
+.wme-ui-panel.e50 fieldset legend::after,
+.wme-ui-modal.e50 fieldset legend::after {
   display: inline-block;
   text-rendering: auto;
   content: "\2191";
@@ -44,7 +46,8 @@
 }
 
 #venue-edit-general .e50 fieldset legend span,
-.wme-ui-panel.e50 fieldset legend span {
+.wme-ui-panel.e50 fieldset legend span,
+.wme-ui-modal.e50 fieldset legend span {
   font-weight: bold;
   background-color: #fff;
   border-radius: 5px;
@@ -58,28 +61,33 @@
 }
 
 #venue-edit-general .e50 fieldset ul,
-.wme-ui-panel.e50 fieldset ul {
+.wme-ui-panel.e50 fieldset ul,
+.wme-ui-modal.e50 fieldset ul {
   border: 1px solid #ddd;
 }
 
 #venue-edit-general .e50 fieldset.collapsed ul,
-.wme-ui-panel.e50 fieldset.collapsed ul {
+.wme-ui-panel.e50 fieldset.collapsed ul,
+.wme-ui-modal.e50 fieldset.collapsed ul {
   display: none;
 }
 
 #venue-edit-general .e50 fieldset.collapsed legend::after,
-.wme-ui-panel.e50 fieldset.collapsed legend::after {
+.wme-ui-panel.e50 fieldset.collapsed legend::after,
+.wme-ui-modal.e50 fieldset.collapsed legend::after {
   content: "\2193";
 }
 
 #venue-edit-general .e50 ul,
-.wme-ui-panel.e50 ul {
+.wme-ui-panel.e50 ul,
+.wme-ui-modal.e50 ul {
   padding: 8px;
   margin: 0;
 }
 
 #venue-edit-general .e50 li,
-.wme-ui-panel.e50 li {
+.wme-ui-panel.e50 li,
+.wme-ui-modal.e50 li {
   padding: 0;
   margin: 0;
   list-style: none;
@@ -87,7 +95,8 @@
 }
 
 #venue-edit-general .e50 li a,
-.wme-ui-panel.e50 li a {
+.wme-ui-panel.e50 li a,
+.wme-ui-modal.e50 li a {
   display: block;
   padding: 2px 4px;
   text-decoration: none;
@@ -95,37 +104,42 @@
 }
 
 #venue-edit-general .e50 li a:hover,
-.wme-ui-panel.e50 li a:hover {
+.wme-ui-panel.e50 li a:hover,
+.wme-ui-modal.e50 li a:hover {
   background: rgba(255, 255, 200, 1);
 }
 
 #venue-edit-general .e50 li a.nonumber,
-.wme-ui-panel.e50 li a.nonumber {
+.wme-ui-panel.e50 li a.nonumber,
+.wme-ui-modal.e50 li a.nonumber {
   background: rgba(250, 250, 200, 0.5);
 }
 
 #venue-edit-general .e50 li a.nonumber:hover,
-.wme-ui-panel.e50 li a.nonumber:hover {
+.wme-ui-panel.e50 li a.nonumber:hover,
+.wme-ui-modal.e50 li a.nonumber:hover {
   background: rgba(250, 250, 200, 1);
 }
 
 #venue-edit-general .e50 li a.noaddress,
-.wme-ui-panel.e50 li a.noaddress {
+.wme-ui-panel.e50 li a.noaddress,
+.wme-ui-modal.e50 li a.noaddress {
   background: rgba(250, 200, 100, 0.5);
 }
 
 #venue-edit-general .e50 li a.noaddress:hover,
-.wme-ui-panel.e50 li a.noaddress:hover {
+.wme-ui-panel.e50 li a.noaddress:hover,
+.wme-ui-modal.e50 li a.noaddress:hover {
   background: rgba(250, 200, 100, 1);
 }
 
 .wme-ui-panel.e50 .wme-ui-fieldset-content:empty,
-#panel-container .archive-panel .body:empty {
+.wme-ui-modal.e50 .wme-ui-modal-content:empty {
   min-height: 20px;
 }
 
 .wme-ui-panel.e50 .wme-ui-fieldset-content:empty::after,
-#panel-container .archive-panel .body:empty::after {
+.wme-ui-modal.e50 .wme-ui-modal-content:empty::after {
   color: #ccc;
   padding: 0 8px;
   content: "\2014";

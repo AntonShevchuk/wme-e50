@@ -1,4 +1,4 @@
-import { NAME } from './translations'
+import { NAME } from './name'
 import { LOCALE } from './types'
 import { SETTINGS } from './settings'
 import { layerConfig } from './layers'
@@ -190,7 +190,7 @@ export class E50 extends WMEBase {
    */
   onNone (event: any) {
     if (this.settings.get('options', 'modal')) {
-      this.modal.html().remove()
+      this.modal.remove()
     }
   }
 
@@ -207,7 +207,7 @@ export class E50 extends WMEBase {
     let container, parent
     if (this.settings.get('options', 'modal')) {
       parent = this.modal.html()
-      container = parent.querySelector('.wme-ui-body')
+      container = parent.querySelector('.wme-ui-modal-content')
     } else {
       parent = this.panel.html()
       container = parent.querySelector('.wme-ui-panel-content')

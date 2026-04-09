@@ -1,4 +1,5 @@
-import { NAME, TRANSLATION } from './translations'
+import { NAME } from './name'
+import { TRANSLATION } from './translations'
 import { SETTINGS } from './settings'
 import { E50 } from './e50'
 import { setE50Instance, applyData, showLayer, hideLayer } from './helpers'

@@ -1,4 +1,4 @@
-import { NAME } from '../translations'
+import { NAME } from '../name'
 import { normalizeCity, normalizeStreet, normalizeNumber, normalizeName } from '../normalize'
 import { detectCity, detectStreet } from '../detect'
 

@@ -1,5 +1,3 @@
-export const NAME = 'E50'
-
 export const TRANSLATION: Record<string, any> = {
   'en': {
     title: 'Information 📍',

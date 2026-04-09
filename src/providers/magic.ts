@@ -1,4 +1,4 @@
-import { NAME } from '../translations'
+import { NAME } from '../name'
 import { Provider } from './base'
 import { TYPES } from '../types'
 
