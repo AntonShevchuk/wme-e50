@@ -2,7 +2,7 @@
 // @name         WME E50 Fetch POI Data
 // @name:uk      WME 🇺🇦 E50 Fetch POI Data
 // @name:ru      WME 🇺🇦 E50 Fetch POI Data
-// @version      0.14.0
+// @version      0.14.1
 // @description  Fetch information about the POI from external sources
 // @description:uk Скрипт дозволяє отримувати інформацію про POI зі сторонніх ресурсів
 // @description:ru Скрипт для получения информации о POI с внешних ресурсов
@@ -22,7 +22,7 @@
 // @connect      stat.waze.com.ua
 // @grant        GM.xmlHttpRequest
 // @grant        GM.setClipboard
-// @require      https://update.greasyfork.org/scripts/389765/1793258/CommonUtils.js
+// @require      https://update.greasyfork.org/scripts/389765/1794584/CommonUtils.js
 // @require      https://update.greasyfork.org/scripts/450160/1792042/WME-Bootstrap.js
 // @require      https://update.greasyfork.org/scripts/450221/1793261/WME-Base.js
 // @require      https://update.greasyfork.org/scripts/450320/1794414/WME-UI.js
@@ -1737,7 +1737,7 @@
         let scriptSettings = new Settings(NAME, SETTINGS);
         let instance = new E50(NAME, scriptSettings);
         setE50Instance(instance);
-        setCache(new SimpleCache(NAME));
+        setCache(new Container());
     })
         .on('click', '.' + NAME + '-link', applyData)
         .on('mouseenter', '.' + NAME + '-link', showLayer)
