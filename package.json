@@ -1,6 +1,6 @@
 {
   "name": "wme-e50",
-  "version": "0.14.1",
+  "version": "0.14.2",
   "scripts": {
     "build": "rollup -c",
     "watch": "rollup -c --watch"
