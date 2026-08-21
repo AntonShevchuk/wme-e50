@@ -10,6 +10,7 @@ export const TRANSLATION: Record<string, any> = {
       externalProvider: 'Show pointer to linked place',
       copyData: 'Copy POI data to clipboard on click',
       lock: 'Lock POI to 2 level',
+      linkGoogle: 'Auto-link Google place',
       keys: 'API keys',
     },
     ranges: {
@@ -47,6 +48,7 @@ export const TRANSLATION: Record<string, any> = {
       externalProvider: 'Відображати пов\'язане місце',
       copyData: 'При виборі, копіювати до буферу обміну назву та адресу POI',
       lock: 'Блокувати POI 2-м рівнем',
+      linkGoogle: 'Автоматично пов\'язувати місце Google',
       keys: 'Ключі до API',
     },
     ranges: {
@@ -84,6 +86,7 @@ export const TRANSLATION: Record<string, any> = {
       externalProvider: 'Показывать связанное место',
       copyData: 'При виборе, копировать в буфер обмена название и адрес POI',
       lock: 'Блокировать POI 2-м уровнем',
+      linkGoogle: 'Автоматически связывать место Google',
       keys: 'Ключи к API',
     },
     ranges: {
@@ -120,6 +123,7 @@ export const TRANSLATION: Record<string, any> = {
       entryPoint: 'Créer le point d\'entrée s\'il n\'existe pas',
       copyData: 'Copier les informations du POI en cliquant',
       lock: 'Verrouiller le POI au niveau 2',
+      linkGoogle: 'Lier automatiquement le lieu Google',
       keys: 'API keys',
     },
     ranges: {
