@@ -2,7 +2,7 @@
 // @name         WME E50 Fetch POI Data
 // @name:uk      WME 🇺🇦 E50 Fetch POI Data
 // @name:ru      WME 🇺🇦 E50 Fetch POI Data
-// @version      0.14.2
+// @version      0.14.3
 // @description  Fetch information about the POI from external sources
 // @description:uk Скрипт дозволяє отримувати інформацію про POI зі сторонніх ресурсів
 // @description:ru Скрипт для получения информации о POI с внешних ресурсов
@@ -46,6 +46,7 @@
                 externalProvider: 'Show pointer to linked place',
                 copyData: 'Copy POI data to clipboard on click',
                 lock: 'Lock POI to 2 level',
+                linkGoogle: 'Auto-link Google place',
                 keys: 'API keys',
             },
             ranges: {
@@ -83,6 +84,7 @@
                 externalProvider: 'Відображати пов\'язане місце',
                 copyData: 'При виборі, копіювати до буферу обміну назву та адресу POI',
                 lock: 'Блокувати POI 2-м рівнем',
+                linkGoogle: 'Автоматично пов\'язувати місце Google',
                 keys: 'Ключі до API',
             },
             ranges: {
@@ -120,6 +122,7 @@
                 externalProvider: 'Показывать связанное место',
                 copyData: 'При виборе, копировать в буфер обмена название и адрес POI',
                 lock: 'Блокировать POI 2-м уровнем',
+                linkGoogle: 'Автоматически связывать место Google',
                 keys: 'Ключи к API',
             },
             ranges: {
@@ -156,6 +159,7 @@
                 entryPoint: 'Créer le point d\'entrée s\'il n\'existe pas',
                 copyData: 'Copier les informations du POI en cliquant',
                 lock: 'Verrouiller le POI au niveau 2',
+                linkGoogle: 'Lier automatiquement le lieu Google',
                 keys: 'API keys',
             },
             ranges: {
@@ -192,6 +196,7 @@
             externalProvider: false,
             copyData: true,
             lock: true,
+            linkGoogle: false,
         },
         ranges: {
             radius: 200,
@@ -1710,6 +1715,143 @@
     function applyData(event) {
         event.preventDefault();
         E50Instance.applyData(event.target.dataset);
+        // If the clicked result came from the Google provider (it carries a Google
+        // place reference), also link it as the venue's external (Google) place by
+        // driving WME's own UI — but only when the "Auto-link Google place"
+        // option is enabled.
+        if (event.target.dataset.reference && E50Instance.settings.get('options', 'linkGoogle')) {
+            linkExternalProvider(event.target.dataset);
+        }
+    }
+    /**
+     * Recursively search for `selector` in the light DOM and inside the shadow
+     * roots of any custom elements. WME's UI is built from web components, so the
+     * real button/input live inside shadow roots.
+     */
+    function queryInShadows(root, selector) {
+        const direct = root.querySelector(selector);
+        if (direct) {
+            return direct;
+        }
+        const hosts = root.querySelectorAll('*');
+        for (let i = 0; i < hosts.length; i++) {
+            const host = hosts[i];
+            if (host.shadowRoot) {
+                const hit = queryInShadows(host.shadowRoot, selector);
+                if (hit) {
+                    return hit;
+                }
+            }
+        }
+        return null;
+    }
+    /**
+     * Same as queryInShadows but returns ALL matches (light DOM + shadow roots),
+     * in document order. Useful when multiple elements share a selector.
+     */
+    function queryInShadowsAll(root, selector) {
+        const results = [];
+        const collect = (r) => {
+            r.querySelectorAll(selector).forEach((el) => results.push(el));
+            const hosts = r.querySelectorAll('*');
+            for (let i = 0; i < hosts.length; i++) {
+                const host = hosts[i];
+                if (host.shadowRoot) {
+                    collect(host.shadowRoot);
+                }
+            }
+        };
+        collect(root);
+        return results;
+    }
+    /**
+     * Poll `fn` until it returns a truthy value or `timeout` ms elapse.
+     */
+    function waitFor(fn, timeout = 8000, interval = 150) {
+        return new Promise((resolve, reject) => {
+            const start = Date.now();
+            const tick = () => {
+                let result;
+                try {
+                    result = fn();
+                }
+                catch (e) {
+                    result = null;
+                }
+                if (result) {
+                    resolve(result);
+                    return;
+                }
+                if (Date.now() - start > timeout) {
+                    reject(new Error('waitFor: timed out'));
+                    return;
+                }
+                setTimeout(tick, interval);
+            };
+            tick();
+        });
+    }
+    /**
+     * Link the Google place from a Google-provider result to the currently
+     * selected venue by driving WME's own "+ Add linked Google place" UI:
+     *   1. click the add button
+     *   2. type the POI name into the search box
+     *   3. click the top autocomplete result
+     *
+     * NOTE: this drives WME's internal DOM (web components with shadow roots).
+     * The selectors below are best-effort and may need adjusting if WME changes
+     * its markup. Failures are logged but never break the address apply.
+     */
+    async function linkExternalProvider(data) {
+        try {
+            const reference = data.reference;
+            const name = data.name;
+            // WME links by searching a text query (name + address), not the place ID.
+            const searchQuery = data.query || name;
+            if (!reference || !searchQuery) {
+                return;
+            }
+            const venue = E50Instance.getSelectedPOI();
+            if (!venue || !E50Instance.canEditVenue(venue)) {
+                return;
+            }
+            // Skip if this Google place is already linked
+            const model = E50Instance.wmeSDK.DataModel.Venues.getById({ venueId: venue.id });
+            if (model && model.externalProviderIds && model.externalProviderIds.indexOf(reference) > -1) {
+                console.info('Google place is already linked');
+                return;
+            }
+            // 1. Click "+ Add linked Google place"
+            const addButton = await waitFor(() => queryInShadows(document, 'wz-button.external-provider-add-new'));
+            addButton.click();
+            // 2. Fill the "Search for a place" input. Use the native setter so the
+            //    component's value binding updates, then dispatch an input event.
+            const input = await waitFor(() => queryInShadows(document, 'input[placeholder="Search for a place"]'));
+            const valueSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value');
+            if (valueSetter && valueSetter.set) {
+                valueSetter.set.call(input, searchQuery || '');
+            }
+            else {
+                input.value = searchQuery || '';
+            }
+            input.dispatchEvent(new Event('input', { bubbles: true }));
+            // 3. Wait for the autocomplete dropdown. Each result is a
+            //    "wz-menu-item.simple-item" that carries the Google place ID in its
+            //    "item-id" attribute. Prefer the exact place; otherwise use the top
+            //    result.
+            const resultEl = await waitFor(() => {
+                const items = queryInShadowsAll(document, 'wz-menu-item.simple-item');
+                if (!items.length) {
+                    return null;
+                }
+                return items.find((el) => el.getAttribute('item-id') === reference) || items[0];
+            });
+            resultEl.click();
+            console.info('✅ Google place linked as external provider');
+        }
+        catch (e) {
+            console.warn('Could not auto-link the Google place (WME UI may have changed)', e);
+        }
     }
     /**
      * Create the vector from the center of the selected POI to point by lon and lat
@@ -1728,7 +1870,7 @@
         E50Instance.hideLayer();
     }
 
-    var css_248z = ".wme-ui-modal.e50 .wme-ui-modal-header h5 {\n  padding: 16px 16px 0;\n  font-size: 16px;\n}\n\n.wme-ui-modal.e50 .wme-ui-modal-content {\n  overflow-x: auto;\n  max-height: 420px;\n  padding: 4px 0;\n}\n\n#venue-edit-general .e50 fieldset {\n  border: 0;\n  padding: 0;\n  margin: 0;\n}\n\n#venue-edit-general .e50 legend {\n  width: 100%;\n  text-align: left;\n}\n\n#venue-edit-general .e50 fieldset legend,\n.wme-ui-panel.e50 fieldset legend,\n.wme-ui-modal.e50 fieldset legend {\n  cursor: pointer;\n  font-size: 12px;\n  font-weight: bold;\n  margin: 0;\n  padding: 0 8px;\n  background-color: #f6f7f7;\n  border: 1px solid #e5e5e5;\n}\n\n#venue-edit-general .e50 fieldset legend::after,\n.wme-ui-panel.e50 fieldset legend::after,\n.wme-ui-modal.e50 fieldset legend::after {\n  display: inline-block;\n  text-rendering: auto;\n  content: \"\\2191\";\n  float: right;\n  font-size: 10px;\n  line-height: inherit;\n  position: relative;\n  right: 3px;\n}\n\n#venue-edit-general .e50 fieldset legend span,\n.wme-ui-panel.e50 fieldset legend span,\n.wme-ui-modal.e50 fieldset legend span {\n  font-weight: bold;\n  background-color: #fff;\n  border-radius: 5px;\n  color: #ed503b;\n  display: inline-block;\n  font-size: 12px;\n  line-height: 14px;\n  max-width: 30px;\n  padding: 1px 5px;\n  text-align: center;\n}\n\n#venue-edit-general .e50 fieldset ul,\n.wme-ui-panel.e50 fieldset ul,\n.wme-ui-modal.e50 fieldset ul {\n  border: 1px solid #ddd;\n}\n\n#venue-edit-general .e50 fieldset.collapsed ul,\n.wme-ui-panel.e50 fieldset.collapsed ul,\n.wme-ui-modal.e50 fieldset.collapsed ul {\n  display: none;\n}\n\n#venue-edit-general .e50 fieldset.collapsed legend::after,\n.wme-ui-panel.e50 fieldset.collapsed legend::after,\n.wme-ui-modal.e50 fieldset.collapsed legend::after {\n  content: \"\\2193\";\n}\n\n#venue-edit-general .e50 ul,\n.wme-ui-panel.e50 ul,\n.wme-ui-modal.e50 ul {\n  padding: 8px;\n  margin: 0;\n}\n\n#venue-edit-general .e50 li,\n.wme-ui-panel.e50 li,\n.wme-ui-modal.e50 li {\n  padding: 0;\n  margin: 0;\n  list-style: none;\n  margin-bottom: 2px;\n}\n\n#venue-edit-general .e50 li a,\n.wme-ui-panel.e50 li a,\n.wme-ui-modal.e50 li a {\n  display: block;\n  padding: 2px 4px;\n  text-decoration: none;\n  border: 1px solid #e4e4e4;\n}\n\n#venue-edit-general .e50 li a:hover,\n.wme-ui-panel.e50 li a:hover,\n.wme-ui-modal.e50 li a:hover {\n  background: rgba(255, 255, 200, 1);\n}\n\n#venue-edit-general .e50 li a.nonumber,\n.wme-ui-panel.e50 li a.nonumber,\n.wme-ui-modal.e50 li a.nonumber {\n  background: rgba(250, 250, 200, 0.5);\n}\n\n#venue-edit-general .e50 li a.nonumber:hover,\n.wme-ui-panel.e50 li a.nonumber:hover,\n.wme-ui-modal.e50 li a.nonumber:hover {\n  background: rgba(250, 250, 200, 1);\n}\n\n#venue-edit-general .e50 li a.noaddress,\n.wme-ui-panel.e50 li a.noaddress,\n.wme-ui-modal.e50 li a.noaddress {\n  background: rgba(250, 200, 100, 0.5);\n}\n\n#venue-edit-general .e50 li a.noaddress:hover,\n.wme-ui-panel.e50 li a.noaddress:hover,\n.wme-ui-modal.e50 li a.noaddress:hover {\n  background: rgba(250, 200, 100, 1);\n}\n\n.wme-ui-panel.e50 .wme-ui-fieldset-content:empty,\n.wme-ui-modal.e50 .wme-ui-modal-content:empty {\n  min-height: 20px;\n}\n\n.wme-ui-panel.e50 .wme-ui-fieldset-content:empty::after,\n.wme-ui-modal.e50 .wme-ui-modal-content:empty::after {\n  color: #ccc;\n  padding: 0 8px;\n  content: \"\\2014\";\n}\n\n.wme-ui-panel.e50 .wme-ui-fieldset-content label {\n  margin-top: 5px;\n  line-height: 18px;\n}\n\n.wme-ui-panel.e50 .wme-ui-fieldset-content input[type=\"text\"] {\n  float: right;\n}\n\n.distance-over-200 {\n  background-color: #f08a24;\n}\n\n.distance-over-1000 {\n  background-color: #ed503b;\n}\n\n.external-operational a.url {\n  border: 4px solid #009900;\n  border-radius: 50%;\n}\n\n.external-closed-temporarily a.url {\n  border: 4px solid #ff7300;\n  border-radius: 50%;\n}\n\n.external-closed-permanently a.url {\n  border: 4px solid #ff0000;\n  border-radius: 50%;\n}\n\n.e50 .wme-ui-tab-content {\n  padding: 8px;\n}\n\np.e50-info {\n  border-top: 1px solid #ccc;\n  color: #777;\n  font-size: x-small;\n  margin-top: 15px;\n  padding-top: 10px;\n  text-align: center;\n}\n\n#sidebar p.e50-blue {\n  background-color: #0057B8;\n  color: white;\n  height: 32px;\n  text-align: center;\n  line-height: 32px;\n  font-size: 24px;\n  margin: 0;\n}\n\n#sidebar p.e50-yellow {\n  background-color: #FFDD00;\n  color: black;\n  height: 32px;\n  text-align: center;\n  line-height: 32px;\n  font-size: 24px;\n  margin: 0;\n}\n";
+    var css_248z = ".wme-ui-modal.e50 .wme-ui-modal-header h5 {\r\n  padding: 16px 16px 0;\r\n  font-size: 16px;\r\n}\r\n\r\n.wme-ui-modal.e50 .wme-ui-modal-content {\r\n  overflow-x: auto;\r\n  max-height: 420px;\r\n  padding: 4px 0;\r\n}\r\n\r\n#venue-edit-general .e50 fieldset {\r\n  border: 0;\r\n  padding: 0;\r\n  margin: 0;\r\n}\r\n\r\n#venue-edit-general .e50 legend {\r\n  width: 100%;\r\n  text-align: left;\r\n}\r\n\r\n#venue-edit-general .e50 fieldset legend,\r\n.wme-ui-panel.e50 fieldset legend,\r\n.wme-ui-modal.e50 fieldset legend {\r\n  cursor: pointer;\r\n  font-size: 12px;\r\n  font-weight: bold;\r\n  margin: 0;\r\n  padding: 0 8px;\r\n  background-color: #f6f7f7;\r\n  border: 1px solid #e5e5e5;\r\n}\r\n\r\n#venue-edit-general .e50 fieldset legend::after,\r\n.wme-ui-panel.e50 fieldset legend::after,\r\n.wme-ui-modal.e50 fieldset legend::after {\r\n  display: inline-block;\r\n  text-rendering: auto;\r\n  content: \"\\2191\";\r\n  float: right;\r\n  font-size: 10px;\r\n  line-height: inherit;\r\n  position: relative;\r\n  right: 3px;\r\n}\r\n\r\n#venue-edit-general .e50 fieldset legend span,\r\n.wme-ui-panel.e50 fieldset legend span,\r\n.wme-ui-modal.e50 fieldset legend span {\r\n  font-weight: bold;\r\n  background-color: #fff;\r\n  border-radius: 5px;\r\n  color: #ed503b;\r\n  display: inline-block;\r\n  font-size: 12px;\r\n  line-height: 14px;\r\n  max-width: 30px;\r\n  padding: 1px 5px;\r\n  text-align: center;\r\n}\r\n\r\n#venue-edit-general .e50 fieldset ul,\r\n.wme-ui-panel.e50 fieldset ul,\r\n.wme-ui-modal.e50 fieldset ul {\r\n  border: 1px solid #ddd;\r\n}\r\n\r\n#venue-edit-general .e50 fieldset.collapsed ul,\r\n.wme-ui-panel.e50 fieldset.collapsed ul,\r\n.wme-ui-modal.e50 fieldset.collapsed ul {\r\n  display: none;\r\n}\r\n\r\n#venue-edit-general .e50 fieldset.collapsed legend::after,\r\n.wme-ui-panel.e50 fieldset.collapsed legend::after,\r\n.wme-ui-modal.e50 fieldset.collapsed legend::after {\r\n  content: \"\\2193\";\r\n}\r\n\r\n#venue-edit-general .e50 ul,\r\n.wme-ui-panel.e50 ul,\r\n.wme-ui-modal.e50 ul {\r\n  padding: 8px;\r\n  margin: 0;\r\n}\r\n\r\n#venue-edit-general .e50 li,\r\n.wme-ui-panel.e50 li,\r\n.wme-ui-modal.e50 li {\r\n  padding: 0;\r\n  margin: 0;\r\n  list-style: none;\r\n  margin-bottom: 2px;\r\n}\r\n\r\n#venue-edit-general .e50 li a,\r\n.wme-ui-panel.e50 li a,\r\n.wme-ui-modal.e50 li a {\r\n  display: block;\r\n  padding: 2px 4px;\r\n  text-decoration: none;\r\n  border: 1px solid #e4e4e4;\r\n}\r\n\r\n#venue-edit-general .e50 li a:hover,\r\n.wme-ui-panel.e50 li a:hover,\r\n.wme-ui-modal.e50 li a:hover {\r\n  background: rgba(255, 255, 200, 1);\r\n}\r\n\r\n#venue-edit-general .e50 li a.nonumber,\r\n.wme-ui-panel.e50 li a.nonumber,\r\n.wme-ui-modal.e50 li a.nonumber {\r\n  background: rgba(250, 250, 200, 0.5);\r\n}\r\n\r\n#venue-edit-general .e50 li a.nonumber:hover,\r\n.wme-ui-panel.e50 li a.nonumber:hover,\r\n.wme-ui-modal.e50 li a.nonumber:hover {\r\n  background: rgba(250, 250, 200, 1);\r\n}\r\n\r\n#venue-edit-general .e50 li a.noaddress,\r\n.wme-ui-panel.e50 li a.noaddress,\r\n.wme-ui-modal.e50 li a.noaddress {\r\n  background: rgba(250, 200, 100, 0.5);\r\n}\r\n\r\n#venue-edit-general .e50 li a.noaddress:hover,\r\n.wme-ui-panel.e50 li a.noaddress:hover,\r\n.wme-ui-modal.e50 li a.noaddress:hover {\r\n  background: rgba(250, 200, 100, 1);\r\n}\r\n\r\n.wme-ui-panel.e50 .wme-ui-fieldset-content:empty,\r\n.wme-ui-modal.e50 .wme-ui-modal-content:empty {\r\n  min-height: 20px;\r\n}\r\n\r\n.wme-ui-panel.e50 .wme-ui-fieldset-content:empty::after,\r\n.wme-ui-modal.e50 .wme-ui-modal-content:empty::after {\r\n  color: #ccc;\r\n  padding: 0 8px;\r\n  content: \"\\2014\";\r\n}\r\n\r\n.wme-ui-panel.e50 .wme-ui-fieldset-content label {\r\n  margin-top: 5px;\r\n  line-height: 18px;\r\n}\r\n\r\n.wme-ui-panel.e50 .wme-ui-fieldset-content input[type=\"text\"] {\r\n  float: right;\r\n}\r\n\r\n.distance-over-200 {\r\n  background-color: #f08a24;\r\n}\r\n\r\n.distance-over-1000 {\r\n  background-color: #ed503b;\r\n}\r\n\r\n.external-operational a.url {\r\n  border: 4px solid #009900;\r\n  border-radius: 50%;\r\n}\r\n\r\n.external-closed-temporarily a.url {\r\n  border: 4px solid #ff7300;\r\n  border-radius: 50%;\r\n}\r\n\r\n.external-closed-permanently a.url {\r\n  border: 4px solid #ff0000;\r\n  border-radius: 50%;\r\n}\r\n\r\n.e50 .wme-ui-tab-content {\r\n  padding: 8px;\r\n}\r\n\r\np.e50-info {\r\n  border-top: 1px solid #ccc;\r\n  color: #777;\r\n  font-size: x-small;\r\n  margin-top: 15px;\r\n  padding-top: 10px;\r\n  text-align: center;\r\n}\r\n\r\n#sidebar p.e50-blue {\r\n  background-color: #0057B8;\r\n  color: white;\r\n  height: 32px;\r\n  text-align: center;\r\n  line-height: 32px;\r\n  font-size: 24px;\r\n  margin: 0;\r\n}\r\n\r\n#sidebar p.e50-yellow {\r\n  background-color: #FFDD00;\r\n  color: black;\r\n  height: 32px;\r\n  text-align: center;\r\n  line-height: 32px;\r\n  font-size: 24px;\r\n  margin: 0;\r\n}\r\n";
 
     $(document)
         .on('bootstrap.wme', () => {

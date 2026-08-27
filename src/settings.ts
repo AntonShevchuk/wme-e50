@@ -6,6 +6,7 @@ export const SETTINGS = {
     externalProvider: false,
     copyData: true,
     lock: true,
+    linkGoogle: false,
   },
   ranges: {
     radius: 200,
